@@ -11,9 +11,6 @@ LOCKFILE="$BASE/../deploy.lock"
 PHP=$(which php)
 COMPOSER=$(which composer)
 
-WEB_USER="www-data"
-WEB_GROUP="www-data"
-
 # Prevent concurrent deploy
 if [ -f "$LOCKFILE" ]; then
     echo "Deploy already running."
@@ -65,7 +62,7 @@ ln -s $SHARED/storage storage
 echo "Fixing permissions..."
 
 # Automatically fix permissions for the new release
-sudo chown -R $WEB_USER:$WEB_GROUP "$NEW_RELEASE/storage" "$NEW_RELEASE/bootstrap/cache"
+sudo chown -R www-data:www-data "$NEW_RELEASE/storage" "$NEW_RELEASE/bootstrap/cache"
 sudo chmod -R 775 "$NEW_RELEASE/storage" "$NEW_RELEASE/bootstrap/cache"
 
 echo "Install dependencies"
@@ -77,6 +74,12 @@ $COMPOSER install \
   --prefer-dist
 
 echo "Laravel optimizations"
+
+ENV_PATH="$SHARED/.env"
+sudo chown tequilapos:www-data "$ENV_PATH"
+sudo chmod 640 "$ENV_PATH"
+
+cd $CURRENT
 
 $PHP artisan config:cache
 $PHP artisan view:cache
