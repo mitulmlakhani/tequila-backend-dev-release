@@ -1,13 +1,12 @@
+
 #!/bin/bash
 set -e
-
 BASE="/home/tequilapos/tequila-backend"
 REPO="$BASE"
 RELEASES="$BASE/../releases"
 SHARED="$BASE/../shared"
 CURRENT="$BASE/../current"
 LOCKFILE="$BASE/../deploy.lock"
-
 PHP=$(which php)
 COMPOSER=$(which composer)
 
@@ -16,18 +15,17 @@ if [ -f "$LOCKFILE" ]; then
     echo "Deploy already running."
     exit 1
 fi
-
 touch $LOCKFILE
 trap "rm -f $LOCKFILE" EXIT
 
-echo "Fetching updates..."
-
+echo "Checking remote tags..."
 cd $REPO
-git fetch --tags --quiet
 
-
-# Get latest tag from remote
-LATEST_TAG=$(git ls-remote --tags origin | awk -F/ '/refs\/tags\// {print $3}' | sort -V | tail -n 1)
+# Get latest tag from remote (metadata-only, no object download)
+LATEST_TAG=$(git ls-remote --tags --sort=-version:refname origin \
+  | grep -v '\^{}' \
+  | head -1 \
+  | awk -F'refs/tags/' '{print $2}')
 echo "Latest remote tag: $LATEST_TAG"
 
 # File to store last deployed tag
@@ -38,21 +36,24 @@ if [ -f "$DEPLOYED_TAG_FILE" ]; then
 fi
 echo "Last deployed tag: $DEPLOYED_TAG"
 
+# Early exit before any fetch if already up to date
 if [ "$LATEST_TAG" == "$DEPLOYED_TAG" ]; then
     echo "Success: Project is already at the latest version ($LATEST_TAG)."
     exit 0
 fi
 
+# Fetch only the single tag we need
+echo "Fetching tag $LATEST_TAG..."
+git fetch --depth=1 --force origin refs/tags/$LATEST_TAG:refs/tags/$LATEST_TAG
+
 TIMESTAMP=$(date +"%Y%m%d%H%M%S")
 NEW_RELEASE="$RELEASES/$TIMESTAMP"
 
 echo "Deploying $LATEST_TAG"
-
 mkdir -p "$NEW_RELEASE"
 git archive $LATEST_TAG | tar -x -C "$NEW_RELEASE"
 
 cd $NEW_RELEASE
-
 
 echo "Link shared resources"
 ln -s $SHARED/.env .env
@@ -60,13 +61,10 @@ rm -rf storage
 ln -s $SHARED/storage storage
 
 echo "Fixing permissions..."
-
-# Automatically fix permissions for the new release
 sudo chown -R www-data:www-data "$NEW_RELEASE/storage" "$NEW_RELEASE/bootstrap/cache"
 sudo chmod -R 775 "$NEW_RELEASE/storage" "$NEW_RELEASE/bootstrap/cache"
 
 echo "Install dependencies"
-
 $COMPOSER install \
   --no-dev \
   --optimize-autoloader \
@@ -74,22 +72,18 @@ $COMPOSER install \
   --prefer-dist
 
 echo "Laravel optimizations"
-
 ENV_PATH="$SHARED/.env"
 sudo chown tequilapos:www-data "$ENV_PATH"
 sudo chmod 640 "$ENV_PATH"
 
 cd $CURRENT
-
 $PHP artisan config:cache
 $PHP artisan view:cache
 
 echo "Running migrations"
-
 $PHP artisan migrate --force
 
 echo "Health check"
-
 if ! $PHP artisan about > /dev/null; then
     echo "Health check failed!"
     rm -rf $NEW_RELEASE
@@ -97,24 +91,18 @@ if ! $PHP artisan about > /dev/null; then
 fi
 
 echo "Switching release"
-
-
-# Ensure $CURRENT is a symlink for atomic switch
 if [ ! -L "$CURRENT" ] && [ -e "$CURRENT" ]; then
     rm -rf "$CURRENT"
 fi
 ln -sfn "$NEW_RELEASE" "$CURRENT"
 
 echo "Restart queues"
-
 sudo supervisorctl restart all
 
 echo "Reload PHP"
-
 sudo systemctl reload php8.3-fpm
 
 echo "Cleaning old releases"
-
 cd $RELEASES
 ls -dt */ | tail -n +6 | xargs rm -rf
 
