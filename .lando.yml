@@ -1,0 +1,172 @@
+name: tequila-pos
+recipe: laravel
+config:
+  php: "8.2"
+  via: apache
+  webroot: public
+  xdebug: false
+  config:
+    php: .lando/php.ini
+
+# ---------------------------------------------------------------------------
+# Services
+# ---------------------------------------------------------------------------
+services:
+  # --- PHP appserver (extended from recipe) --------------------------------
+  appserver:
+    build_as_root:
+      - apt-get update -y
+      - apt-get install -y --no-install-recommends supervisor libgmp-dev curl sudo gnupg ca-certificates
+      - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+      - apt-get install -y --no-install-recommends nodejs chromium libx11-xcb1 libxcomposite1 libasound2 libatk1.0-0 libatk-bridge2.0-0 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgbm1 libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libxcb1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6
+      - bash -x /app/.lando/setup-hosts.sh
+      - echo "www-data ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/www-data
+      - docker-php-ext-install -j$(nproc) gmp
+      - mkdir -p /etc/supervisor/conf.d
+      - cp /app/.lando/supervisord.conf /etc/supervisor/conf.d/laravel-workers.conf
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install -g laravel-echo-server@1.6.3 puppeteer
+      - |
+        set -e
+        ARCH=$(uname -m)
+        if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+          IONCUBE_URL="https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_aarch64.tar.gz"
+        else
+          IONCUBE_URL="https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"
+        fi
+        curl -fsSL "$IONCUBE_URL" -o /tmp/ioncube.tar.gz
+        tar -xzf /tmp/ioncube.tar.gz -C /tmp
+        mkdir -p /usr/local/lib/php/extensions/no-debug-non-zts-20230831
+        cp /tmp/ioncube/ioncube_loader_lin_8.3.so /usr/local/lib/php/extensions/no-debug-non-zts-20230831/
+        cp /tmp/ioncube/ioncube_loader_lin_8.3.so /usr/local/lib/php/extensions/no-debug-non-zts-20220829/ || true
+        echo "zend_extension=ioncube_loader_lin_8.3.so" > /usr/local/etc/php/conf.d/00-ioncube.ini
+        rm -rf /tmp/ioncube /tmp/ioncube.tar.gz
+    build:
+      - composer install --no-interaction --prefer-dist --optimize-autoloader
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install
+    overrides:
+      image: devwithlando/php:8.3-apache-4
+      environment:
+        APP_NAME: tequila-pos offline
+        APP_URL: http://tequilapos.local
+        DB_HOST: database
+        DB_PORT: "3306"
+        DB_DATABASE: tequila_pos
+        DB_USERNAME: tequila
+        DB_PASSWORD: tequila
+        REDIS_HOST: cache
+        REDIS_PORT: "6379"
+        REDIS_PASSWORD: ""
+        REDIS_CLIENT: predis
+        QUEUE_CONNECTION: database
+        BROADCAST_DRIVER: redis
+        CACHE_DRIVER: redis
+        SESSION_DRIVER: file
+        SESSION_SECURE_COOKIE: "false"
+        SESSION_SAME_SITE: lax
+        MAIL_MAILER: smtp
+        MAIL_HOST: mailhog
+        MAIL_PORT: "1025"
+        MAIL_USERNAME: ""
+        MAIL_PASSWORD: ""
+        MAIL_ENCRYPTION: ""
+        CLOUD_URL: "https://tequilapos.net"
+        BROWSERSHOT_NODE_BINARY: "/usr/bin/node"
+        BROWSERSHOT_NPM_BINARY: "/usr/bin/npm"
+        BROWSERSHOT_CHROME_PATH: "/usr/bin/chromium"
+        RESTAURANT_ID: "88"
+        CLOUD_API_AUTH_KEY: "7b9d9633-b898-4280-902e-f0c81575ed45"
+
+  # --- MySQL 8.0 (official image – avoids broken Bitnami refs) -------------
+  database:
+    type: compose
+    services:
+      image: mysql:8.0
+      restart: unless-stopped
+    overrides:
+      entrypoint: ["docker-entrypoint.sh"]
+      command: ["mysqld", "--default-authentication-plugin=mysql_native_password"]
+      environment:
+        MYSQL_ROOT_PASSWORD: tequila
+        MYSQL_DATABASE: tequila_pos
+        MYSQL_USER: tequila
+        MYSQL_PASSWORD: tequila
+      ports:
+        - "33060:3306"
+
+  # --- Redis 7 (official image) --------------------------------------------
+  cache:
+    type: compose
+    services:
+      image: redis:7-alpine
+      command: redis-server
+      ports:
+        - "63790:6379"
+
+
+  # --- Adminer (database GUI) ----------------------------------------------
+  adminer:
+    type: compose
+    ssl: true
+    services:
+      image: adminer:latest
+      command: php -S 0.0.0.0:8080 -t /var/www/html
+      environment:
+        ADMINER_DEFAULT_SERVER: database
+        ADMINER_DESIGN: dracula
+
+
+# ---------------------------------------------------------------------------
+# Events – run on every `lando start`
+# ---------------------------------------------------------------------------
+events:
+  post-start:
+    - appserver: sudo supervisord 2>/dev/null || true; sudo supervisorctl reread 2>/dev/null || true; sudo supervisorctl update 2>/dev/null || true; sudo supervisorctl start all 2>/dev/null || true
+    - appserver: bash /app/.lando/init.sh
+
+# ---------------------------------------------------------------------------
+# Proxy – pretty hostnames via Lando's Traefik proxy
+# ---------------------------------------------------------------------------
+proxy:
+  appserver:
+    - tequilapos.local
+    - echo.tequilapos.local:6000
+  adminer:
+    - adminer.tequilapos.local:8080
+
+# ---------------------------------------------------------------------------
+# Tooling – developer shortcuts (use: lando <command>)
+# ---------------------------------------------------------------------------
+tooling:
+  artisan:
+    service: appserver
+    cmd: php artisan
+  composer:
+    service: appserver
+    cmd: composer
+  tinker:
+    service: appserver
+    cmd: php artisan tinker
+  test:
+    service: appserver
+    cmd: php artisan test
+  fresh:
+    service: appserver
+    cmd: php artisan migrate:fresh --seed
+  npm:
+    service: appserver
+    cmd: npm
+  node:
+    service: appserver
+    cmd: node
+  queue-restart:
+    service: appserver
+    user: root
+    cmd: supervisorctl restart laravel-queue
+  schedule-restart:
+    service: appserver
+    user: root
+    cmd: supervisorctl restart laravel-scheduler
+  worker-status:
+    service: appserver
+    user: root
+    cmd: supervisorctl status

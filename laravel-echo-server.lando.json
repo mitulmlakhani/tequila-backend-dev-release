@@ -1,0 +1,37 @@
+{
+  "authHost": "http://appserver",
+  "authEndpoint": "/broadcasting/auth",
+  "clients": [
+    {
+      "appId": "local-app-id",
+      "key": "local-app-key"
+    }
+  ],
+  "database": "redis",
+  "databaseConfig": {
+    "redis": {
+      "host": "cache",
+      "port": "6379",
+      "keyPrefix": "tequila_pos_offline_database_"
+    }
+  },
+  "devMode": true,
+  "host": "0.0.0.0",
+  "port": 6000,
+  "protocol": "http",
+  "socketio": {},
+  "allowCors": true,
+  "sslCertPath": "",
+  "sslKeyPath": "",
+  "sslCertChainPath": "",
+  "subscribers": {
+    "http": true,
+    "redis": true
+  },
+  "apiOriginAllow": {
+    "allowCors": true,
+    "allowOrigin": "*",
+    "allowMethods": "GET, POST",
+    "allowHeaders": "Origin, Content-Type, X-Auth-Token, X-Requested-With, Accept, Authorization"
+  }
+}
