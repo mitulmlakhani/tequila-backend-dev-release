@@ -19,7 +19,7 @@
     "devMode": false,
     "debug": true,
     "host": null,
-    "port": 6001,
+    "port": 6000,
     "protocol": "http",
     "allowCors": true,
     "sslCertChainPath": "",
