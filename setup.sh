@@ -29,7 +29,7 @@ mkdir -p /tmp/tequila_backup
 
 # Ensure we fetch all tags from origin
 echo "Fetching tags from remote repository..."
-# git fetch --tags --quiet || git fetch --tags origin --quiet
+git fetch --tags --quiet || git fetch --tags origin --quiet
 
 # Get the latest tag name (very first only, sorted by version)
 LATEST_TAG=$(git tag -l | sort -V | tail -n1)
