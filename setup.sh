@@ -193,7 +193,7 @@ fi
 
 echo ""
 echo "4) Setup updator.sh to cron job at 5 AM daily:"
-CRON_JOB="0 5 * * * cd \"$PROJECT_PATH\" && /bin/bash \"$PROJECT_PATH/storage/logs/updator.sh\" >> \"$PROJECT_PATH/storage/logs/updator.log\" 2>&1"
+CRON_JOB="0 5 * * * cd \"$PROJECT_PATH\" && /bin/bash \"$PROJECT_PATH/updator.sh\" >> \"$PROJECT_PATH/storage/logs/updator.log\" 2>&1"
 CURRENT_CRON="$(crontab -l 2>/dev/null || true)"
 
 if echo "$CURRENT_CRON" | grep -Fxq "$CRON_JOB"; then
