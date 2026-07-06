@@ -32,7 +32,7 @@ echo "Fetching tags from remote repository..."
 # git fetch --tags --quiet || git fetch --tags origin --quiet
 
 # Get the latest tag name (very first only, sorted by version)
-LATEST_TAG=$(git ls-remote --tags origin | awk -F/ '/refs\/tags\// {print $3}' | sort -V | tail -n 1)
+LATEST_TAG=$(git tag -l | sort -V | tail -n1)
 
 if [ -z "$LATEST_TAG" ]; then
     echo "❌ Error: No tags found in the repository."
@@ -184,6 +184,18 @@ echo ""
 echo "3) Remove .lando subdirectory from git tracking (if it exists):"
 if [ -d ./.lando/.lando ]; then
     rm -r ./.lando/.lando
+fi
+
+echo ""
+echo "4) Setup updator.sh to cron job at 5 AM daily:"
+CRON_JOB="0 5 * * * cd \"$PROJECT_PATH\" && /bin/bash \"$PROJECT_PATH/updator.sh\" >> \"$PROJECT_PATH/updator.log\" 2>&1"
+CURRENT_CRON="$(crontab -l 2>/dev/null || true)"
+
+if echo "$CURRENT_CRON" | grep -Fxq "$CRON_JOB"; then
+    echo "✅ Cron job already exists."
+else
+    printf "%s\n%s\n" "$CURRENT_CRON" "$CRON_JOB" | crontab -
+    echo "✅ Cron job added."
 fi
 
 echo ""
