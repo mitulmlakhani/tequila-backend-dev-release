@@ -3,7 +3,7 @@
 # Tequila POS – Lando post-start init script
 # Runs on every `lando start` to ensure the app is ready.
 # =============================================================================
-set -euo pipefail
+set -uo pipefail
 
 cd /app
 
@@ -58,10 +58,10 @@ php artisan storage:link 2>/dev/null || true
 
 # ── 6. Clear caches ─────────────────────────────────────────────────────────
 echo "🧹  Clearing caches …"
-php artisan config:clear  --no-interaction
-php artisan cache:clear   --no-interaction
-php artisan route:clear   --no-interaction
-php artisan view:clear    --no-interaction
+php artisan config:clear  --no-interaction || true
+php artisan cache:clear   --no-interaction || true
+php artisan route:clear   --no-interaction || true
+php artisan view:clear    --no-interaction || true
 
 # ── 7. Create log files for supervisor ───────────────────────────────────────
 mkdir -p storage/logs
@@ -71,7 +71,7 @@ touch storage/logs/echo-server.log
 
 # ── 8. Trust Lando SSL certificate inside container ─────────────────────────
 echo "🔒 Registering Lando SSL certificates..."
-bash /app/.lando/trust-certs.sh
+bash /app/.lando/trust-certs.sh || echo "⚠️  trust-certs.sh failed (non-fatal)."
 
 # ── Done! ────────────────────────────────────────────────────────────────────
 echo ""

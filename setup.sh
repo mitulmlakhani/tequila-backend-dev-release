@@ -181,13 +181,19 @@ lando ssh -u root -c "bash /app/.lando/setup-hosts.sh" || {
 }
 
 echo ""
+echo "3) Remove .lando subdirectory from git tracking (if it exists):"
+if [ -d ./.lando/.lando ]; then
+    rm -r ./.lando/.lando
+fi
+
+echo ""
 echo "🎉 ======================================================= 🎉"
 echo "✅  TEQUILA POS PROJECT SETUP COMPLETE!"
-echo "   🌮  App URL:  http://tequilapos.local"
-echo "   🌮   DB URL:  http://adminer.tequilapos.local"
+echo "   🌮  App URL:  https://tequilapos.local"
+echo "   🌮   DB URL:  https://adminer.tequilapos.local"
 echo "   🌮   DB User:  root"
 echo "   🌮   DB Password:  tequila"
 echo "   🌮   DB Name:  tequila_pos"
-echo "   🌮  Socket URL:  http://echo.tequilapos.local"
+echo "   🌮  Socket URL:  https://echo.tequilapos.local"
 echo "🎉 ======================================================= 🎉"
 echo ""

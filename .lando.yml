@@ -35,10 +35,26 @@ services:
         fi
         curl -fsSL "$IONCUBE_URL" -o /tmp/ioncube.tar.gz
         tar -xzf /tmp/ioncube.tar.gz -C /tmp
-        mkdir -p /usr/local/lib/php/extensions/no-debug-non-zts-20230831
-        cp /tmp/ioncube/ioncube_loader_lin_8.3.so /usr/local/lib/php/extensions/no-debug-non-zts-20230831/
-        cp /tmp/ioncube/ioncube_loader_lin_8.3.so /usr/local/lib/php/extensions/no-debug-non-zts-20220829/ || true
-        echo "zend_extension=ioncube_loader_lin_8.3.so" > /usr/local/etc/php/conf.d/00-ioncube.ini
+        echo "== ionCube archive contents =="
+        ls -la /tmp/ioncube
+ 
+        PHP_EXT_DIR=$(php -r 'echo ini_get("extension_dir");')
+        PHP_MAJOR_MINOR=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
+        LOADER_FILE="/tmp/ioncube/ioncube_loader_lin_${PHP_MAJOR_MINOR}.so"
+ 
+        echo "== Detected PHP extension_dir: ${PHP_EXT_DIR} =="
+        echo "== Looking for loader: ${LOADER_FILE} =="
+ 
+        if [ ! -f "$LOADER_FILE" ]; then
+          echo "ERROR: no ionCube loader found for PHP ${PHP_MAJOR_MINOR} in the downloaded archive." >&2
+          echo "Available loaders were:" >&2
+          ls /tmp/ioncube | grep ioncube_loader_lin >&2 || true
+          exit 1
+        fi
+ 
+        mkdir -p "$PHP_EXT_DIR"
+        cp "$LOADER_FILE" "$PHP_EXT_DIR/"
+        echo "zend_extension=${PHP_EXT_DIR}/$(basename "$LOADER_FILE")" > /usr/local/etc/php/conf.d/00-ioncube.ini
         rm -rf /tmp/ioncube /tmp/ioncube.tar.gz
     build:
       - composer install --no-interaction --prefer-dist --optimize-autoloader
