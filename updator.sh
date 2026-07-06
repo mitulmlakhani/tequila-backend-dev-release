@@ -31,6 +31,12 @@ log "=========================================================="
 
 # ── 1. Fetch tags and check for update ───────────────────────────────────────
 log "Fetching latest tags from remote repository..."
+
+git config --global --add safe.directory "$PROJECT_PATH" || {
+    log "❌ Error: Failed to set safe.directory for Git."
+    exit 1
+}
+
 git fetch --tags --quiet || {
     log "❌ Error: Failed to fetch tags from remote repository."
     exit 1
