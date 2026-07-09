@@ -12,6 +12,15 @@
 # =============================================================================
 set -uo pipefail
 
+# ── 0. Cron-safe environment ──────────────────────────────────────────────
+# Cron runs jobs with a minimal environment (no PATH beyond /usr/bin:/bin, no
+# HOME, no SSH agent). This is the #1 cause of "works manually, fails in cron"
+# issues with git/docker/lando. Set everything explicitly here.
+export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/snap/bin:${PATH:-}"
+export HOME="${HOME:-$(eval echo ~"$(id -un)")}"
+export GIT_TERMINAL_PROMPT=0   # never hang waiting for interactive credentials
+export GIT_ASKPASS=""
+
 PROJECT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_PATH" || { echo "❌ Error: Could not enter project directory $PROJECT_PATH"; exit 1; }
 
@@ -25,6 +34,42 @@ log() {
     echo "$msg" | tee -a "$LOG_FILE"
 }
 
+# ── 0b. Prevent overlapping runs ─────────────────────────────────────────
+# If a previous run is still executing (e.g. a slow composer install), a new
+# cron trigger must not start a second one on top of it.
+#
+# NOTE: `flock` is a Linux-only utility (util-linux) and isn't installed on
+# macOS by default, and a shared /tmp lock file can end up owned by another
+# user (e.g. root, from a manual `sudo` run) causing "Permission denied".
+# `mkdir` is atomic on every platform and needs no extra binary, so we use
+# that instead, inside the project's own (user-owned) storage directory.
+LOCK_DIR="$PROJECT_PATH/storage/logs/.tequila-update.lock"
+
+acquire_lock() {
+    if mkdir "$LOCK_DIR" 2>/dev/null; then
+        echo $$ > "$LOCK_DIR/pid"
+        return 0
+    fi
+    # Lock already exists - check whether it's stale (owning process is dead)
+    local pid
+    pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || echo "")
+    if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+        log "⚠️  Found a stale lock left by dead process $pid. Removing it."
+        rm -rf "$LOCK_DIR"
+        if mkdir "$LOCK_DIR" 2>/dev/null; then
+            echo $$ > "$LOCK_DIR/pid"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+if ! acquire_lock; then
+    log "⚠️  Another update process is already running. Exiting."
+    exit 1
+fi
+trap 'rm -rf "$LOCK_DIR"' EXIT
+
 log "=========================================================="
 log "🌮  Tequila POS: Automated Background Update Started"
 log "=========================================================="
@@ -37,10 +82,28 @@ git config --global --add safe.directory "$PROJECT_PATH" || {
     exit 1
 }
 
-git fetch --tags --quiet || {
+# Retry fetch up to 3 times (transient network issues) and capture the real
+# git error output instead of swallowing it - this is what was hiding the
+# actual cause of the failure in the previous version of this script.
+FETCH_OK=0
+for attempt in 1 2 3; do
+    FETCH_OUTPUT=$(git fetch --tags 2>&1)
+    if [ $? -eq 0 ]; then
+        FETCH_OK=1
+        break
+    fi
+    log "⚠️  git fetch attempt $attempt/3 failed. Retrying in 5s..."
+    sleep 5
+done
+
+if [ "$FETCH_OK" -ne 1 ]; then
     log "❌ Error: Failed to fetch tags from remote repository."
+    log "Git output: $FETCH_OUTPUT"
+    log "👉 Common causes: cron's PATH/HOME differs from your interactive shell,"
+    log "   no SSH key loaded for the git user (private SSH remote), or an"
+    log "   HTTPS remote whose stored credential helper isn't available to cron."
     exit 1
-}
+fi
 
 # Get the latest tag name sorted by version
 LATEST_TAG=$(git tag -l | sort -V | tail -n1)

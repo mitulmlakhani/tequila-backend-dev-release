@@ -73,6 +73,15 @@ touch storage/logs/echo-server.log
 echo "🔒 Registering Lando SSL certificates..."
 bash /app/.lando/trust-certs.sh || echo "⚠️  trust-certs.sh failed (non-fatal)."
 
+# ── 9. Configure and start supervisor workers ────────────────────────────────
+echo "🚀  Starting supervisor background workers (Echo Server, Queue, Scheduler)..."
+sudo mkdir -p /etc/supervisor/conf.d
+sudo ln -sf /app/.lando/supervisord.conf /etc/supervisor/conf.d/tequila-workers.conf
+sudo supervisord -c /etc/supervisor/supervisord.conf 2>/dev/null || true
+sudo supervisorctl -c /etc/supervisor/supervisord.conf reread 2>/dev/null || true
+sudo supervisorctl -c /etc/supervisor/supervisord.conf update 2>/dev/null || true
+sudo supervisorctl -c /etc/supervisor/supervisord.conf start all 2>/dev/null || true
+
 # ── Done! ────────────────────────────────────────────────────────────────────
 echo ""
 echo "─────────────────────────────────────────"
