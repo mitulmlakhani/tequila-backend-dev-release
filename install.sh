@@ -6,6 +6,31 @@
 # =============================================================================
 set -uo pipefail
 
+
+### Update to Latest Release
+echo "Checking latest release..."
+
+git fetch --tags --quiet
+
+LATEST_TAG=$(git ls-remote --tags origin | awk -F/ '!/\^\{\}$/ {print $3}' | sort -V | tail -n1)
+
+CURRENT_TAG=$(git describe --tags --exact-match 2>/dev/null || true)
+
+echo "LATEST_TAG: $LATEST_TAG, CURRENT_TAG: $CURRENT_TAG"
+
+if [ "$CURRENT_TAG" != "$LATEST_TAG" ]; then
+    echo "Updating to latest release."
+
+    echo "Updating $CURRENT_TAG -> $LATEST_TAG"
+
+    # Fetch ONLY the new tag
+    git fetch --depth=1 origin tag "$LATEST_TAG"
+
+    git checkout -f "$LATEST_TAG"
+fi
+
+## Prompt for Required Environment Variables
+
 read -rp "Enter RESTAURANT_ID: " RESTAURANT_ID
 read -rp "Enter CLOUD_API_AUTH_KEY: " CLOUD_API_AUTH_KEY
 
