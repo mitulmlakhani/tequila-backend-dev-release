@@ -52,4 +52,4 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 
 WORKDIR /var/www/html
 
-EXPOSE 80 6000
+EXPOSE 80 6001
