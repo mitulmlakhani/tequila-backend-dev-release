@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "6000:6000"
+      - "6001:6001"
     volumes:
       - .:/var/www/html
       - ./docker/php.ini:/usr/local/etc/php/conf.d/99-custom.ini

@@ -17,17 +17,17 @@ if [ ! -f .env ]; then
   cp .env.example .env
 fi
 
-# ── 2. Application key ──────────────────────────────────────────────────────
-APP_KEY=$(grep '^APP_KEY=' .env | cut -d'=' -f2- || true)
-if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
-  echo "🔑  Generating application key …"
-  php artisan key:generate --no-interaction --force
-fi
-
-# ── 3. Ensure dependencies if missing ────────────────────────────────────────
+# ── 2. Ensure dependencies if missing ────────────────────────────────────────
 if [ ! -d vendor ]; then
   echo "📦  Installing Composer dependencies …"
   composer install --no-interaction --prefer-dist --optimize-autoloader
+fi
+
+# ── 3. Application key ──────────────────────────────────────────────────────
+APP_KEY=$(grep '^APP_KEY=' .env | cut -d'=' -f2- || true)
+if ! grep -q '^APP_KEY=base64:' .env; then
+  echo "🔑  Generating application key …"
+  php artisan key:generate --force --no-interaction
 fi
 
 if [ ! -d node_modules ]; then
