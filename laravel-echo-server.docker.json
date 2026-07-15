@@ -1,5 +1,5 @@
 {
-  "authHost": "http://appserver",
+  "authHost": "http://localhost",
   "authEndpoint": "/broadcasting/auth",
   "clients": [
     {

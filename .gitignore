@@ -26,5 +26,6 @@ yarn-error.log
 app/Http/.DS_Store
 .DS_Store
 /db_data
-laravel-echo-server.lando.lock
+laravel-echo-server.lock
+laravel-echo-server.docker.lock
 updator.log

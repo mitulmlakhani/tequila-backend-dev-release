@@ -1,0 +1,80 @@
+services:
+  # --- PHP & Apache Application Server -------------------------------------
+  appserver:
+    build: .
+    container_name: tequila-appserver
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "6000:6000"
+    volumes:
+      - .:/var/www/html
+      - ./docker/php.ini:/usr/local/etc/php/conf.d/99-custom.ini
+    entrypoint: ["bash", "/var/www/html/docker/entrypoint.sh"]
+    command: ["apache2-foreground"]
+    extra_hosts:
+      - "tequilapos.local:127.0.0.1"
+      - "echo.tequilapos.local:127.0.0.1"
+    environment:
+      APP_NAME: "tequila-pos offline"
+      APP_URL: "http://tequilapos.local:80"
+      DB_HOST: "database"
+      DB_PORT: "3306"
+      DB_DATABASE: "tequila_pos"
+      DB_USERNAME: "tequila"
+      DB_PASSWORD: "tequila"
+      REDIS_HOST: "cache"
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      REDIS_CLIENT: "predis"
+      QUEUE_CONNECTION: "database"
+      BROADCAST_DRIVER: "redis"
+      CACHE_DRIVER: "redis"
+      SESSION_DRIVER: "file"
+      SESSION_SECURE_COOKIE: "false"
+      SESSION_SAME_SITE: "lax"
+      CLOUD_URL: "https://tequilapos.net"
+      BROWSERSHOT_NODE_BINARY: "/usr/bin/node"
+      BROWSERSHOT_NPM_BINARY: "/usr/bin/npm"
+      BROWSERSHOT_CHROME_PATH: "/usr/bin/chromium"
+      RESTAURANT_ID: "88"
+      CLOUD_API_AUTH_KEY: "7b9d9633-b898-4280-902e-f0c81575ed45"
+    depends_on:
+      database:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+
+  # --- MySQL 8.0 Database --------------------------------------------------
+  database:
+    image: mysql:8.0
+    container_name: tequila-database
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db_data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: "tequila_pos"
+      MYSQL_USER: "tequila"
+      MYSQL_PASSWORD: "tequila"
+      MYSQL_ROOT_PASSWORD: "tequila"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "tequila", "-ptequila"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- Redis 7 Cache & PubSub ----------------------------------------------
+  cache:
+    image: redis:7-alpine
+    container_name: tequila-cache
+    restart: unless-stopped
+    command: redis-server
+    ports:
+      - "63790:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5

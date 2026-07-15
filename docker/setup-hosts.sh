@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Tequila POS – Script to automate adding custom domains to /etc/hosts.
-# Run this on your host machine: sudo bash .lando/setup-hosts.sh
-# (Called automatically by setup.sh with sudo privileges)
+# Run this on your host machine: sudo bash docker/setup-hosts.sh
 # =============================================================================
 
-# Do NOT use set -euo pipefail here – a non-fatal error must not abort setup.sh
 set -uo pipefail
 
 DOMAINS=(
   "tequilapos.local"
   "echo.tequilapos.local"
-  "adminer.tequilapos.local"
 )
 
 IP="127.0.0.1"
@@ -21,7 +18,6 @@ echo "🔍 Checking /etc/hosts entries..."
 MISSING_DOMAINS=()
 
 for domain in "${DOMAINS[@]}"; do
-  # Check if domain is already present in hosts file
   if grep -q "$domain" "$HOSTS_FILE" 2>/dev/null; then
     echo "  ✅ $domain is already in $HOSTS_FILE"
   else
@@ -40,8 +36,6 @@ echo "Adding missing domains to $HOSTS_FILE:"
 FAILED=0
 for domain in "${MISSING_DOMAINS[@]}"; do
   echo "  Adding: $IP $domain"
-  # Script is called with sudo by setup.sh; tee directly (no sudo needed inside)
-  # Fallback to sudo tee if running standalone
   if [ "$(id -u)" -eq 0 ]; then
     echo "$IP $domain" >> "$HOSTS_FILE" || { echo "  ⚠️  Failed to write $domain to $HOSTS_FILE"; FAILED=1; }
   else
