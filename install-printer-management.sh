@@ -19,7 +19,7 @@ set -euo pipefail
 # ----------------------------------------------------------------------------
 # Configuration (override via environment variables before running if needed)
 # ----------------------------------------------------------------------------
-APP_DIR="${APP_DIR:-~/printer-management}"
+APP_DIR="${APP_DIR:-$HOME/printer-management}"
 REPO_URL="${REPO_URL:-https://github.com/TequilaPOS/TequilaPOS-Printer-Management.git}"
 DRIVER_SET="${DRIVER_SET:-lite}"          # lite | common | full
 TZ_VALUE="${TZ_VALUE:-America/Chicago}"
