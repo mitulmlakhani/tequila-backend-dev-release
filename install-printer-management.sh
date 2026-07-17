@@ -11,9 +11,8 @@
 # Requirements:
 #   - Docker + Docker Compose plugin installed
 #   - git installed (if cloning from a repo)
-#   - Run as a user with sudo privileges
+#   - Run as a user with sudo privileges (or write permissions to APP_DIR)
 # ============================================================================
-
 set -euo pipefail
 
 # ----------------------------------------------------------------------------
@@ -29,7 +28,12 @@ BACKEND_PORT="${BACKEND_PORT:-3000}"
 # already in use by other apps on this server.
 FRONTEND_PORT="${FRONTEND_PORT:-8080}"
 WEBSOCKET_PORT="${WEBSOCKET_PORT:-6002}"
-MYSQL_PORT="${MYSQL_PORT:-3307}"
+MYSQL_PORT="${MYSQL_PORT:-3306}"          # Port 3306 of shared tequila-database
+MYSQL_HOST="${MYSQL_HOST:-host.docker.internal}"
+MYSQL_CONTAINER="${MYSQL_CONTAINER:-tequila-database}"
+MYSQL_DATABASE="${MYSQL_DATABASE:-printer_management}"
+MYSQL_USER="${MYSQL_USER:-printer_admin}"
+FRONTEND_URL="${FRONTEND_URL:-}"
 HEALTH_RETRIES=15
 HEALTH_DELAY=4
 
@@ -37,7 +41,6 @@ HEALTH_DELAY=4
 # Helpers
 # ----------------------------------------------------------------------------
 c_green="\033[1;32m"; c_yellow="\033[1;33m"; c_red="\033[1;31m"; c_reset="\033[0m"
-
 step()  { echo -e "\n${c_yellow}==>${c_reset} $*"; }
 ok()    { echo -e "${c_green}✔${c_reset} $*"; }
 fail()  { echo -e "${c_red}✘ $*${c_reset}" >&2; exit 1; }
@@ -61,13 +64,15 @@ ok "Docker, Docker Compose, and openssl are available"
 # the current user — not root — owns it before anything writes into it)
 # ============================================================================
 step "Step 1/9: Creating application directory at ${APP_DIR}"
-sudo mkdir -p "${APP_DIR}"
-sudo chown -R "$USER":"$(id -gn)" "${APP_DIR}"
+mkdir -p "${APP_DIR}" 2>/dev/null || sudo mkdir -p "${APP_DIR}"
+if [ ! -w "${APP_DIR}" ]; then
+  sudo chown -R "$USER":"$(id -gn)" "${APP_DIR}"
+fi
 cd "${APP_DIR}"
 ok "Directory ready and owned by ${USER}: ${APP_DIR}"
 
 # ============================================================================
-# Step 2 — Fetch project files (git clone, or fall back to local copy)
+# Step 2 — Fetch project files (either by cloning or updating if .git exists)
 # ============================================================================
 step "Step 2/9: Fetching project files"
 if [ -d ".git" ]; then
@@ -86,13 +91,15 @@ fi
 # with different ownership, e.g. if run under sudo or as a different user)
 # ============================================================================
 step "Step 3/9: Confirming file ownership"
-sudo chown -R "$USER":"$(id -gn)" "${APP_DIR}"
+if [ ! -w "${APP_DIR}" ]; then
+  sudo chown -R "$USER":"$(id -gn)" "${APP_DIR}"
+fi
 ok "Ownership set to ${USER}"
 
 # ============================================================================
-# Step 4 — Generate secrets dynamically
+# Step 4 — Generate secrets dynamically and load defaults
 # ============================================================================
-step "Step 4/9: Generating secure secrets"
+step "Step 4/9: Generating secure secrets and loading defaults"
 if [ -f .env ]; then
   ok ".env already exists — backing it up to .env.bak.$(date +%s) and keeping existing secrets"
   cp .env ".env.bak.$(date +%s)"
@@ -102,21 +109,26 @@ if [ -f .env ]; then
   JWT_REFRESH_SECRET="$(grep -m1 '^JWT_REFRESH_SECRET=' .env | cut -d= -f2-)"
   MYSQL_ROOT_PASSWORD="$(grep -m1 '^MYSQL_ROOT_PASSWORD=' .env | cut -d= -f2-)"
   MYSQL_PASSWORD="$(grep -m1 '^MYSQL_PASSWORD=' .env | cut -d= -f2-)"
+  MYSQL_HOST="$(grep -m1 '^DB_HOST=' .env | cut -d= -f2- || grep -m1 '^MYSQL_HOST=' .env | cut -d= -f2- || echo "")"
+  MYSQL_CONTAINER="$(grep -m1 '^MYSQL_CONTAINER=' .env | cut -d= -f2- || echo "")"
+  MYSQL_DATABASE="$(grep -m1 '^MYSQL_DATABASE=' .env | cut -d= -f2- || grep -m1 '^DB_NAME=' .env | cut -d= -f2- || echo "")"
+  MYSQL_USER="$(grep -m1 '^MYSQL_USER=' .env | cut -d= -f2- || grep -m1 '^DB_USER=' .env | cut -d= -f2- || echo "")"
+  FRONTEND_URL="$(grep -m1 '^FRONTEND_URL=' .env | cut -d= -f2- || echo "")"
 fi
 
 # Generate a fresh, cryptographically strong JWT secret if none was carried over
 JWT_SECRET="${JWT_SECRET:-$(openssl rand -hex 64)}"
 JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$(openssl rand -hex 64)}"
-# Generate strong random passwords for MySQL if none were carried over
+# Default passwords and shared database target (defaults match tequila-database)
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-tequila}"
 MYSQL_PASSWORD="${MYSQL_PASSWORD:-printer_admin}"
-# NOTE: these are now fixed at "tequila" instead of being randomly generated.
-# That's a much weaker credential than a random 24-byte password — fine for a
-# local/dev box, but swap back to `openssl rand -base64 24` before this ever
-# touches a shared or production server.
+MYSQL_HOST="${MYSQL_HOST:-host.docker.internal}"
+MYSQL_CONTAINER="${MYSQL_CONTAINER:-tequila-database}"
+MYSQL_DATABASE="${MYSQL_DATABASE:-printer_management}"
+MYSQL_USER="${MYSQL_USER:-printer_admin}"
+FRONTEND_URL="${FRONTEND_URL:-}"
 
-ok "JWT secret generated (64 bytes, hex-encoded)"
-ok "MySQL root and application passwords generated (24 bytes, base64-encoded)"
+ok "JWT secrets and database configuration resolved"
 
 # ============================================================================
 # Step 5 — Write production .env file
@@ -128,11 +140,21 @@ cat > .env << EOF
 # Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 # ===========================================
 
-# MySQL Database
+# MySQL Database (shared with tequila-database)
+MYSQL_CONTAINER=${MYSQL_CONTAINER}
+MYSQL_HOST=${MYSQL_HOST}
+MYSQL_PORT=${MYSQL_PORT}
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-MYSQL_DATABASE=printer_management
-MYSQL_USER=printer_admin
+MYSQL_DATABASE=${MYSQL_DATABASE}
+MYSQL_USER=${MYSQL_USER}
 MYSQL_PASSWORD=${MYSQL_PASSWORD}
+
+# Backend DB Connection
+DB_HOST=${MYSQL_HOST}
+DB_PORT=${MYSQL_PORT}
+DB_NAME=${MYSQL_DATABASE}
+DB_USER=${MYSQL_USER}
+DB_PASSWORD=${MYSQL_PASSWORD}
 
 # Backend
 NODE_ENV=production
@@ -149,6 +171,7 @@ DRIVER_SET=${DRIVER_SET}
 
 # Frontend
 VITE_API_URL=/api
+FRONTEND_URL=${FRONTEND_URL}
 FRONTEND_PORT=${FRONTEND_PORT}
 WEBSOCKET_PORT=${WEBSOCKET_PORT}
 MYSQL_PORT=${MYSQL_PORT}
@@ -156,118 +179,53 @@ MYSQL_PORT=${MYSQL_PORT}
 # Timezone
 TZ=${TZ_VALUE}
 EOF
-
 chmod 600 .env
-ok ".env written and secured (chmod 600)"
+ok "Wrote ${APP_DIR}/.env (chmod 600)"
 
 # ============================================================================
-# Step 5b — Sanity-check docker-compose.yml port mappings
+# Step 5b — Sanity-check docker-compose.yml port mappings and DB target
 # ============================================================================
-step "Step 5b/9: Checking docker-compose.yml for port conflicts"
+step "Step 5b/9: Checking docker-compose.yml for port conflicts and DB target"
 if [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
   COMPOSE_FILE=$( [ -f docker-compose.yml ] && echo docker-compose.yml || echo docker-compose.yaml )
-  for p in 80 6001 3306; do
+  for p in 80 6001; do
     if grep -Eq "\"?${p}:[0-9]+\"?" "${COMPOSE_FILE}"; then
       echo -e "${c_yellow}Warning:${c_reset} ${COMPOSE_FILE} still hard-codes host port ${p}, which is already in use."
-      echo "         Update its port mapping to use \${FRONTEND_PORT}, \${WEBSOCKET_PORT}, or \${MYSQL_PORT}"
+      echo "         Update its port mapping to use \${FRONTEND_PORT} or \${WEBSOCKET_PORT}"
       echo "         (e.g. \"\${FRONTEND_PORT}:80\") so it picks up the values from .env."
     fi
   done
+
+  if grep -q "DB_HOST: mysql" "${COMPOSE_FILE}"; then
+    echo -e "${c_yellow}Note:${c_reset} Updating ${COMPOSE_FILE} DB_HOST to use \${DB_HOST:-\${MYSQL_HOST:-host.docker.internal}} for shared MySQL instance (${MYSQL_CONTAINER})."
+    sed -i.bak -E 's/DB_HOST: mysql/DB_HOST: ${DB_HOST:-${MYSQL_HOST:-host.docker.internal}}/g' "${COMPOSE_FILE}" && rm -f "${COMPOSE_FILE}.bak"
+  fi
 else
   echo -e "${c_yellow}Note:${c_reset} no docker-compose.yml found yet in ${APP_DIR} — skipping port conflict check."
-  echo "      Once it's in place, make sure it maps ports via \${FRONTEND_PORT}, \${WEBSOCKET_PORT}, \${MYSQL_PORT}"
-  echo "      (e.g. \"\${FRONTEND_PORT}:80\") rather than hard-coded 80 / 6001 / 3306."
+  echo "      Once it's in place, make sure it maps ports via \${FRONTEND_PORT}, \${WEBSOCKET_PORT}"
+  echo "      rather than hard-coded 80 / 6001."
 fi
 
 # ============================================================================
-# Step 5c — Configure nginx's /api reverse proxy to point at the backend
-# container (not localhost/127.0.0.1, which inside Docker refers to the
-# nginx container itself, not the backend)
+# Step 5c — Sanity-check nginx.conf proxy_pass target
 # ============================================================================
-step "Step 5c/9: Configuring nginx /api proxy_pass"
-
-# Auto-detect the backend service name from docker-compose.yml
-BACKEND_SERVICE="${BACKEND_SERVICE:-}"
-if [ -z "${BACKEND_SERVICE}" ]; then
-  for candidate in backend api server; do
-    if docker compose config --services 2>/dev/null | grep -qx "${candidate}"; then
-      BACKEND_SERVICE="${candidate}"
-      break
-    fi
-  done
-fi
-BACKEND_SERVICE="${BACKEND_SERVICE:-backend}"
-ok "Using backend service name: ${BACKEND_SERVICE}"
-
-# Look for an existing nginx config in common locations
-NGINX_CONF=""
-for candidate in nginx/default.conf nginx/conf.d/default.conf nginx/nginx.conf docker/nginx/default.conf nginx.conf; do
-  if [ -f "${candidate}" ]; then
-    NGINX_CONF="${candidate}"
-    break
-  fi
-done
-
-if [ -n "${NGINX_CONF}" ]; then
-  cp "${NGINX_CONF}" "${NGINX_CONF}.bak.$(date +%s)"
-
-  if grep -qE 'proxy_pass\s+http://(localhost|127\.0\.0\.1):[0-9]+' "${NGINX_CONF}"; then
-    # Fix the common mistake: proxy_pass pointing at localhost/127.0.0.1
-    # instead of the backend container's service name
-    sed -i.tmp -E "s#proxy_pass[[:space:]]+http://(localhost|127\.0\.0\.1):[0-9]+#proxy_pass http://${BACKEND_SERVICE}:${BACKEND_PORT}#g" "${NGINX_CONF}"
-    rm -f "${NGINX_CONF}.tmp"
-    ok "Fixed proxy_pass in ${NGINX_CONF} to point at http://${BACKEND_SERVICE}:${BACKEND_PORT}"
-  elif grep -qE "proxy_pass\s+http://${BACKEND_SERVICE}:" "${NGINX_CONF}"; then
-    ok "${NGINX_CONF} already proxies to ${BACKEND_SERVICE}:${BACKEND_PORT} — no change needed"
-  elif grep -q "location /api" "${NGINX_CONF}"; then
-    echo -e "${c_yellow}Warning:${c_reset} found a 'location /api' block in ${NGINX_CONF} but couldn't"
-    echo "         confirm its proxy_pass target. Please check it manually:"
-    grep -A5 "location /api" "${NGINX_CONF}"
+step "Step 5c/9: Checking nginx.conf proxy configuration"
+if [ -f nginx.conf ]; then
+  if grep -q "proxy_pass http://backend:3000/api;" nginx.conf; then
+    echo -e "${c_yellow}Note:${c_reset} nginx.conf contains proxy_pass ending with /api; (\`proxy_pass http://backend:3000/api;\`)."
+    echo "      Patching to proxy_pass http://backend:3000; so requests preserve full path."
+    cp nginx.conf "nginx.conf.bak.$(date +%s)"
+    sed -i.bak 's|proxy_pass http://backend:3000/api;|proxy_pass http://backend:3000;|g' nginx.conf && rm -f nginx.conf.bak
+    ok "Patched nginx.conf proxy_pass"
   else
-    echo -e "${c_yellow}Warning:${c_reset} no 'location /api' block found in ${NGINX_CONF}."
-    echo "         Add one manually, e.g.:"
-    echo "           location /api {"
-    echo "               proxy_pass http://${BACKEND_SERVICE}:${BACKEND_PORT};"
-    echo "               proxy_set_header Host \$host;"
-    echo "               proxy_set_header X-Real-IP \$remote_addr;"
-    echo "           }"
+    ok "nginx.conf proxy_pass check OK"
   fi
-else
-  # No nginx config found anywhere in the project — create a sensible default
-  mkdir -p nginx
-  NGINX_CONF="nginx/default.conf"
-  cat > "${NGINX_CONF}" << EOF
-server {
-    listen 80;
-    server_name _;
-
-    location /api {
-        proxy_pass http://${BACKEND_SERVICE}:${BACKEND_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-
-    location / {
-        root /usr/share/nginx/html;
-        try_files \$uri \$uri/ /index.html;
-    }
-}
-EOF
-  ok "No existing nginx config found — created ${NGINX_CONF} with /api proxied to ${BACKEND_SERVICE}:${BACKEND_PORT}"
-  echo -e "${c_yellow}Important:${c_reset} for this file to take effect, docker-compose.yml's nginx service"
-  echo "           must mount it, e.g.:"
-  echo "             volumes:"
-  echo "               - ./${NGINX_CONF}:/etc/nginx/conf.d/default.conf"
-  echo "           Add that mount, then re-run this script or run: docker compose up -d --force-recreate nginx"
 fi
 
 # ============================================================================
 # Step 6 — Build images
 # ============================================================================
-step "Step 6/9: Building Docker images"
+step "Step 6/9: Building Docker images (this may take several minutes on first run)"
 docker compose build
 ok "Images built successfully"
 
@@ -275,65 +233,76 @@ ok "Images built successfully"
 # Step 7 — Start services
 # ============================================================================
 step "Step 7/9: Starting services (detached mode)"
-docker compose up -d
-ok "docker compose up -d issued"
+docker compose up -d --remove-orphans
+ok "docker compose up -d --remove-orphans issued"
 
 # ============================================================================
 # Step 7a — Reload nginx so the /api proxy_pass fix from Step 5c takes
-# effect immediately, even if the nginx container was already running
+# effect (if the container was already running with old config)
 # ============================================================================
 step "Step 7a/9: Reloading nginx config"
-if docker compose ps --status=running --services 2>/dev/null | grep -qx nginx; then
-  if docker compose exec nginx nginx -s reload >/dev/null 2>&1; then
-    ok "nginx config reloaded"
-  else
-    echo -e "${c_yellow}Note:${c_reset} nginx -s reload failed — recreating the container instead"
-    docker compose up -d --force-recreate nginx
-    ok "nginx container recreated"
-  fi
+if docker compose exec -T nginx nginx -s reload 2>/dev/null; then
+  ok "nginx config reloaded"
 else
-  ok "nginx will pick up the config on its first start"
+  echo "Note: nginx -s reload failed — recreating the container instead"
+  docker compose up -d --force-recreate nginx
+  ok "nginx container recreated"
 fi
 
 # ============================================================================
-# Step 7b — Import init.sql into the database (only runs once: skipped if
-# the database already has tables, so re-running the script won't re-import
-# and clobber existing data)
+# Step 7b — Import init.sql into MySQL (or shared instance)
 # ============================================================================
-step "Step 7b/9: Importing init.sql into MySQL"
+step "Step 7b/9: Importing init.sql into MySQL (${MYSQL_CONTAINER:-tequila-database})"
 
 INIT_SQL_FILE="${INIT_SQL_FILE:-init.sql}"
 MYSQL_SERVICE="${MYSQL_SERVICE:-}"
+MYSQL_CMD=""
+MYSQL_PING_CMD=""
 
 if [ ! -f "${INIT_SQL_FILE}" ]; then
   echo -e "${c_yellow}Note:${c_reset} ${INIT_SQL_FILE} not found in ${APP_DIR} — skipping import."
 else
-  # Auto-detect the mysql service name from docker-compose.yml if not set explicitly
-  if [ -z "${MYSQL_SERVICE}" ]; then
-    for candidate in mysql db database mariadb; do
-      if docker compose config --services 2>/dev/null | grep -qx "${candidate}"; then
-        MYSQL_SERVICE="${candidate}"
-        break
-      fi
-    done
+  # Detect whether target MySQL is running as an external/shared container (e.g. tequila-database)
+  # or as a service inside docker-compose.yml
+  if [ -n "${MYSQL_CONTAINER:-}" ] && (docker inspect "${MYSQL_CONTAINER}" >/dev/null 2>&1 || docker ps -a --format '{{.Names}}' | grep -qx "${MYSQL_CONTAINER}"); then
+    ok "Using standalone MySQL container: ${MYSQL_CONTAINER}"
+    MYSQL_CMD="docker exec -i ${MYSQL_CONTAINER} mysql"
+    MYSQL_PING_CMD="docker exec -i ${MYSQL_CONTAINER} mysqladmin ping"
+  else
+    # Fall back to checking docker-compose.yml for a local MySQL service
+    if [ -z "${MYSQL_SERVICE}" ]; then
+      for candidate in mysql db database mariadb; do
+        if docker compose config --services 2>/dev/null | grep -qx "${candidate}"; then
+          MYSQL_SERVICE="${candidate}"
+          break
+        fi
+      done
+    fi
+
+    if [ -n "${MYSQL_SERVICE}" ]; then
+      ok "Using local compose MySQL service: ${MYSQL_SERVICE}"
+      MYSQL_CMD="docker compose exec -T ${MYSQL_SERVICE} mysql"
+      MYSQL_PING_CMD="docker compose exec -T ${MYSQL_SERVICE} mysqladmin ping"
+    elif command -v mysql >/dev/null 2>&1 && command -v mysqladmin >/dev/null 2>&1; then
+      ok "Using host mysql CLI connecting to ${MYSQL_HOST}:${MYSQL_PORT}"
+      MYSQL_CMD="mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT}"
+      MYSQL_PING_CMD="mysqladmin ping -h ${MYSQL_HOST} -P ${MYSQL_PORT}"
+    else
+      echo -e "${c_yellow}Warning:${c_reset} could not detect running container '${MYSQL_CONTAINER:-}' or local compose service."
+      echo "         Set MYSQL_CONTAINER=<name> or MYSQL_SERVICE=<name> and re-run."
+    fi
   fi
 
-  if [ -z "${MYSQL_SERVICE}" ]; then
-    echo -e "${c_yellow}Warning:${c_reset} could not auto-detect the MySQL service name from docker-compose.yml."
-    echo "         Set MYSQL_SERVICE=<name> and re-run, e.g.: MYSQL_SERVICE=mysql ./install-printer-management.sh"
-  else
-    ok "Using MySQL service: ${MYSQL_SERVICE}"
-
+  if [ -n "${MYSQL_PING_CMD:-}" ]; then
     # Wait for MySQL to actually accept connections before importing
     mysql_attempt=1
     mysql_ready=false
     while [ "${mysql_attempt}" -le "${HEALTH_RETRIES}" ]; do
-      if docker compose exec -T "${MYSQL_SERVICE}" \
-           mysqladmin ping -uroot -p"${MYSQL_ROOT_PASSWORD}" --silent >/dev/null 2>&1; then
+      if ${MYSQL_PING_CMD} -uroot -p"${MYSQL_ROOT_PASSWORD}" --silent >/dev/null 2>&1; then
         mysql_ready=true
         break
       fi
-      echo "   ...waiting for MySQL to accept connections (attempt ${mysql_attempt}/${HEALTH_RETRIES})"
+      echo "   ...waiting for MySQL (${MYSQL_CONTAINER:-$MYSQL_SERVICE}) to accept connections (attempt ${mysql_attempt}/${HEALTH_RETRIES})"
       sleep "${HEALTH_DELAY}"
       mysql_attempt=$((mysql_attempt + 1))
     done
@@ -341,20 +310,30 @@ else
     if [ "${mysql_ready}" != true ]; then
       echo -e "${c_red}MySQL did not become ready in time — skipping init.sql import.${c_reset}"
       echo "         You can import it manually later with:"
-      echo "         docker compose exec -T ${MYSQL_SERVICE} mysql -uroot -p'${MYSQL_ROOT_PASSWORD}' printer_management < ${INIT_SQL_FILE}"
+      echo "         ${MYSQL_CMD} -uroot -p'${MYSQL_ROOT_PASSWORD}' printer_management < ${INIT_SQL_FILE}"
     else
+      # Ensure database and user exist on the shared MySQL instance before importing
+      if ${MYSQL_CMD} -uroot -p"${MYSQL_ROOT_PASSWORD}" -e \
+           "CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
+            CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED WITH mysql_native_password BY '${MYSQL_PASSWORD}';
+            ALTER USER '${MYSQL_USER}'@'%' IDENTIFIED WITH mysql_native_password BY '${MYSQL_PASSWORD}';
+            GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
+            FLUSH PRIVILEGES;" 2>/dev/null; then
+        ok "Database '${MYSQL_DATABASE}' and user '${MYSQL_USER}' configured on MySQL instance"
+      else
+        echo -e "${c_yellow}Warning:${c_reset} Could not verify/create database or user via root credentials. Ensure MYSQL_ROOT_PASSWORD matches target MySQL instance."
+      fi
+
       # Check whether the database already has tables — if so, assume it was
       # already imported (or is live) and skip, rather than re-running init.sql
-      TABLE_COUNT=$(docker compose exec -T "${MYSQL_SERVICE}" \
-        mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" -N -e \
-        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='printer_management';" 2>/dev/null | tr -d '\r')
+      TABLE_COUNT=$(${MYSQL_CMD} -uroot -p"${MYSQL_ROOT_PASSWORD}" -N -e \
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${MYSQL_DATABASE}';" 2>/dev/null | tr -d '\r')
 
       if [ "${TABLE_COUNT:-0}" -gt 0 ] 2>/dev/null; then
-        ok "Database already has ${TABLE_COUNT} table(s) — skipping init.sql import (already initialized)."
+        ok "Database '${MYSQL_DATABASE}' already has ${TABLE_COUNT} table(s) — skipping init.sql import (already initialized)."
       else
-        if docker compose exec -T "${MYSQL_SERVICE}" \
-             mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" printer_management < "${INIT_SQL_FILE}"; then
-          ok "init.sql imported successfully into 'printer_management'"
+        if ${MYSQL_CMD} -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" < "${INIT_SQL_FILE}"; then
+          ok "init.sql imported successfully into '${MYSQL_DATABASE}'"
         else
           fail "Failed to import ${INIT_SQL_FILE} into MySQL. Check the error output above."
         fi
@@ -363,15 +342,17 @@ else
   fi
 fi
 
+# ============================================================================
+# Step 7c — Fix default admin password hash
+# ============================================================================
 step "Step 7c/9: Fixing default admin password hash"
  
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@printer.local}"
 # Verified hash for "Admin123!" — generated and confirmed with bcrypt.checkpw()
 ADMIN_PASSWORD_HASH="${ADMIN_PASSWORD_HASH:-\$2b\$10\$qIH8KWtAnC8qrVu02dgK0.r/OvEOpJ2R7ZaHr7bVFMHn11P67i/E2}"
 
-if [ -n "${MYSQL_SERVICE:-}" ]; then
-  if docker compose exec -T "${MYSQL_SERVICE}" \
-       mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" printer_management -e \
+if [ "${mysql_ready:-false}" = true ] && [ -n "${MYSQL_CMD:-}" ]; then
+  if ${MYSQL_CMD} -uroot -p"${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" -e \
        "UPDATE users SET password='${ADMIN_PASSWORD_HASH}' WHERE email='${ADMIN_EMAIL}';" 2>/dev/null; then
     ok "Admin password hash fixed for ${ADMIN_EMAIL}"
     if [ "${ADMIN_PASSWORD_HASH}" = '$2b$10$qIH8KWtAnC8qrVu02dgK0.r/OvEOpJ2R7ZaHr7bVFMHn11P67i/E2' ]; then
@@ -381,7 +362,13 @@ if [ -n "${MYSQL_SERVICE:-}" ]; then
     echo -e "${c_yellow}Note:${c_reset} could not update admin password (table/user may not exist yet, or MySQL wasn't reachable). Skipping."
   fi
 else
-  echo -e "${c_yellow}Note:${c_reset} MySQL service not detected — skipping admin password fix."
+  echo -e "${c_yellow}Note:${c_reset} MySQL instance not ready — skipping admin password fix."
+fi
+
+if [ "${mysql_ready:-false}" = true ]; then
+  # Restart backend and nginx so they pick up the initialized database and users cleanly
+  echo "   ...restarting backend and nginx services to pick up database initialization"
+  docker compose restart backend nginx >/dev/null 2>&1 || true
 fi
 
 # ============================================================================
@@ -390,7 +377,7 @@ fi
 step "Step 8/9: Verifying container status"
 sleep 3
 docker compose ps
-if docker compose ps --status=exited | grep -q .; then
+if docker compose ps --status=exited --services 2>/dev/null | grep -q .; then
   echo -e "${c_red}One or more containers exited unexpectedly. Recent logs:${c_reset}"
   docker compose logs --tail=50
   fail "Container(s) not running. See logs above."
@@ -441,7 +428,7 @@ echo -e "${c_green}=====================================================${c_rese
 echo "  Frontend:      http://localhost:${FRONTEND_PORT}"
 echo "  Backend API:   http://localhost:${BACKEND_PORT}/api"
 echo "  WebSocket:     localhost:${WEBSOCKET_PORT} (was 6001)"
-echo "  MySQL (host):  localhost:${MYSQL_PORT} (was 3306, only relevant if exposed to the host)"
+echo "  MySQL:         shared instance (${MYSQL_CONTAINER:-tequila-database}) on port ${MYSQL_PORT}"
 echo "  App directory: ${APP_DIR}"
 echo "  Secrets file:  ${APP_DIR}/.env (chmod 600 — keep this safe)"
 echo "  Database init: init.sql imported (or already present — see Step 7b above)"
