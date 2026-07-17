@@ -233,8 +233,8 @@ docker compose stop mysql 2>/dev/null || true
 docker compose rm -s -v -f mysql 2>/dev/null || true
 docker rm -f printer-mysql 2>/dev/null || true
 
-# Explicitly start ONLY backend, frontend, and nginx so printer-mysql is never started
-docker compose up -d --remove-orphans backend frontend nginx
+# Explicitly start ONLY backend, frontend, and nginx with --no-deps so printer-mysql is never started via depends_on
+docker compose up -d --no-deps --remove-orphans backend frontend nginx
 ok "Services started (backend, frontend, nginx) — local mysql service disabled and cleaned up"
 
 # ============================================================================
@@ -246,7 +246,7 @@ if docker compose exec -T nginx nginx -s reload 2>/dev/null; then
   ok "nginx config reloaded"
 else
   echo "Note: nginx -s reload failed — recreating the container instead"
-  docker compose up -d --force-recreate nginx
+  docker compose up -d --no-deps --force-recreate nginx
   ok "nginx container recreated"
 fi
 
@@ -370,6 +370,9 @@ if [ "${mysql_ready:-false}" = true ]; then
   # Restart backend and nginx so they pick up the initialized database and users cleanly
   echo "   ...restarting backend and nginx services to pick up database initialization"
   docker compose restart backend nginx >/dev/null 2>&1 || true
+  # Final safety check: ensure local mysql did not start as a side-effect of any compose operation
+  docker compose stop mysql >/dev/null 2>&1 || true
+  docker rm -f printer-mysql >/dev/null 2>&1 || true
 fi
 
 # ============================================================================
