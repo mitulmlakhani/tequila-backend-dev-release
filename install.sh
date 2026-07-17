@@ -60,9 +60,19 @@ sedi "s/CLOUD_API_AUTH_KEY=\"[^\"]*\"/CLOUD_API_AUTH_KEY=\"${CLOUD_API_AUTH_KEY}
 
 echo "✅ Config updated."
 
+# --- Prepare storage and bootstrap directory structure & permissions ---------
+echo "🔒 Preparing storage and bootstrap/cache permissions on host..."
+mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+chmod -R 777 storage bootstrap/cache 2>/dev/null || sudo chmod -R 777 storage bootstrap/cache 2>/dev/null || true
+
 # --- Start Docker -------------------------------------------------------------
 echo "🚀 Starting Docker containers..."
 docker compose up -d --build
+
+# --- Ensure permissions inside container after start --------------------------
+echo "🔒 Fixing storage and bootstrap/cache directory permissions across host and container..."
+chmod -R 777 storage bootstrap/cache 2>/dev/null || sudo chmod -R 777 storage bootstrap/cache 2>/dev/null || true
+docker compose exec -T appserver bash -c "mkdir -p storage/app/public storage/framework/{cache/data,sessions,views} storage/logs bootstrap/cache && chown -R www-data:www-data storage bootstrap/cache 2>/dev/null && chmod -R 777 storage bootstrap/cache 2>/dev/null" || true
 
 # --- Hosts file on host machine ----------------------------------------------
 echo "🌐 Configuring /etc/hosts on host machine..."

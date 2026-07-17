@@ -21,8 +21,9 @@ export GIT_ASKPASS=""
 PROJECT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_PATH" || { echo "❌ Error: Could not enter project directory $PROJECT_PATH"; exit 1; }
 
-# Create log directory if it doesn't exist
-mkdir -p storage/logs
+# Create directory structure and set permissions right away
+mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+chmod -R 777 storage bootstrap/cache 2>/dev/null || sudo chmod -R 777 storage bootstrap/cache 2>/dev/null || true
 LOG_FILE="$PROJECT_PATH/storage/logs/auto-update.log"
 
 log() {
@@ -151,7 +152,9 @@ log "⚡ Clearing and rebuilding Laravel caches..."
 docker compose exec -T appserver php artisan config:cache --no-interaction >> "$LOG_FILE" 2>&1 || true
 docker compose exec -T appserver php artisan route:cache --no-interaction >> "$LOG_FILE" 2>&1 || true
 docker compose exec -T appserver php artisan view:cache --no-interaction >> "$LOG_FILE" 2>&1 || true
-log "✅ Laravel caches rebuilt."
+docker compose exec -T appserver bash -c "chown -R www-data:www-data storage bootstrap/cache 2>/dev/null && chmod -R 777 storage bootstrap/cache 2>/dev/null" || true
+chmod -R 777 storage bootstrap/cache 2>/dev/null || sudo chmod -R 777 storage bootstrap/cache 2>/dev/null || true
+log "✅ Laravel caches rebuilt and permissions synced."
 
 # ── 8. Zero/Near-Zero Downtime Graceful Reload ───────────────────────────────
 if [ "$DOCKER_CONFIG_CHANGED" -eq 1 ]; then

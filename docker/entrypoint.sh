@@ -66,9 +66,9 @@ fi
 # ── 5. Storage link & permissions ───────────────────────────────────────────
 echo "🔗  Creating storage link & preparing logs …"
 php artisan storage:link 2>/dev/null || true
-mkdir -p storage/logs bootstrap/cache
+mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
-chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+chmod -R 777 storage bootstrap/cache 2>/dev/null || true
 
 # ── 6. Clear caches ─────────────────────────────────────────────────────────
 echo "🧹  Clearing caches …"
@@ -77,9 +77,10 @@ php artisan cache:clear   --no-interaction || true
 php artisan route:clear   --no-interaction || true
 php artisan view:clear    --no-interaction || true
 
-# ── 7. Create log files for supervisor ───────────────────────────────────────
-touch storage/logs/queue-worker.log storage/logs/scheduler.log storage/logs/echo-server.log
+# ── 7. Create log files for supervisor & cron ────────────────────────────────
+touch storage/logs/queue-worker.log storage/logs/scheduler.log storage/logs/echo-server.log storage/logs/laravel.log storage/logs/cron.log storage/logs/auto-update.log
 chown www-data:www-data storage/logs/*.log 2>/dev/null || true
+chmod 666 storage/logs/*.log 2>/dev/null || true
 
 # ── 8. Configure and start supervisor workers ────────────────────────────────
 echo "🚀  Starting supervisor background workers (Echo Server, Queue, Scheduler)..."
