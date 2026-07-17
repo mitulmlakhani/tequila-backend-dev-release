@@ -183,9 +183,9 @@ chmod 600 .env
 ok "Wrote ${APP_DIR}/.env (chmod 600)"
 
 # ============================================================================
-# Step 5b — Sanity-check docker-compose.yml port mappings and DB target
+# Step 5b — Sanity-check docker-compose.yml port mappings (read-only check)
 # ============================================================================
-step "Step 5b/9: Checking docker-compose.yml for port conflicts and DB target"
+step "Step 5b/9: Checking docker-compose.yml for port conflicts"
 if [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
   COMPOSE_FILE=$( [ -f docker-compose.yml ] && echo docker-compose.yml || echo docker-compose.yaml )
   for p in 80 6001; do
@@ -195,11 +195,6 @@ if [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
       echo "         (e.g. \"\${FRONTEND_PORT}:80\") so it picks up the values from .env."
     fi
   done
-
-  if grep -q "DB_HOST: mysql" "${COMPOSE_FILE}"; then
-    echo -e "${c_yellow}Note:${c_reset} Updating ${COMPOSE_FILE} DB_HOST to use \${DB_HOST:-\${MYSQL_HOST:-host.docker.internal}} for shared MySQL instance (${MYSQL_CONTAINER})."
-    sed -i.bak -E 's/DB_HOST: mysql/DB_HOST: ${DB_HOST:-${MYSQL_HOST:-host.docker.internal}}/g' "${COMPOSE_FILE}" && rm -f "${COMPOSE_FILE}.bak"
-  fi
 else
   echo -e "${c_yellow}Note:${c_reset} no docker-compose.yml found yet in ${APP_DIR} — skipping port conflict check."
   echo "      Once it's in place, make sure it maps ports via \${FRONTEND_PORT}, \${WEBSOCKET_PORT}"
@@ -225,16 +220,22 @@ fi
 # ============================================================================
 # Step 6 — Build images
 # ============================================================================
-step "Step 6/9: Building Docker images (this may take several minutes on first run)"
-docker compose build
+step "Step 6/9: Building Docker images (backend and frontend)"
+docker compose build backend frontend
 ok "Images built successfully"
 
 # ============================================================================
-# Step 7 — Start services
+# Step 7 — Start services (excluding local mysql)
 # ============================================================================
-step "Step 7/9: Starting services (detached mode)"
-docker compose up -d --remove-orphans
-ok "docker compose up -d --remove-orphans issued"
+step "Step 7/9: Starting services (detached mode without local mysql service)"
+# Stop and remove any local mysql container if present in compose or Docker so it does not conflict
+docker compose stop mysql 2>/dev/null || true
+docker compose rm -s -v -f mysql 2>/dev/null || true
+docker rm -f printer-mysql 2>/dev/null || true
+
+# Explicitly start ONLY backend, frontend, and nginx so printer-mysql is never started
+docker compose up -d --remove-orphans backend frontend nginx
+ok "Services started (backend, frontend, nginx) — local mysql service disabled and cleaned up"
 
 # ============================================================================
 # Step 7a — Reload nginx so the /api proxy_pass fix from Step 5c takes
