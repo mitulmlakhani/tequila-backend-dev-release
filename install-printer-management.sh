@@ -77,6 +77,7 @@ ok "Directory ready and owned by ${USER}: ${APP_DIR}"
 step "Step 2/9: Fetching project files"
 if [ -d ".git" ]; then
   ok "Repository already present, pulling latest changes"
+  git checkout -- nginx.conf docker-compose.yml docker-compose.yaml 2>/dev/null || true
   git pull --ff-only
 elif [ -z "$(ls -A "${APP_DIR}" 2>/dev/null)" ]; then
   require_cmd git
@@ -214,6 +215,25 @@ if [ -f nginx.conf ]; then
     ok "Patched nginx.conf proxy_pass"
   else
     ok "nginx.conf proxy_pass check OK"
+  fi
+fi
+
+# ============================================================================
+# Step 5d — Sanity-check docker-compose.yml database configuration
+# ============================================================================
+step "Step 5d/9: Checking docker-compose.yml database configuration"
+if [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
+  COMPOSE_FILE=$( [ -f docker-compose.yml ] && echo docker-compose.yml || echo docker-compose.yaml )
+  if grep -Eq '^[[:space:]]*DB_HOST:[[:space:]]*"?mysql"?' "${COMPOSE_FILE}"; then
+    echo -e "${c_yellow}Note:${c_reset} ${COMPOSE_FILE} hardcodes DB_HOST: mysql."
+    echo "      Patching DB_HOST and DB_PORT to use environment variables from .env."
+    cp "${COMPOSE_FILE}" "${COMPOSE_FILE}.bak.$(date +%s)"
+    sed -i.bak 's|DB_HOST:[[:space:]]*mysql|DB_HOST: ${DB_HOST:-mysql}|g; s|DB_HOST:[[:space:]]*"mysql"|DB_HOST: ${DB_HOST:-mysql}|g' "${COMPOSE_FILE}"
+    sed -i.bak 's|DB_PORT:[[:space:]]*3306|DB_PORT: ${DB_PORT:-3306}|g; s|DB_PORT:[[:space:]]*"3306"|DB_PORT: ${DB_PORT:-3306}|g' "${COMPOSE_FILE}"
+    rm -f "${COMPOSE_FILE}.bak"
+    ok "Patched ${COMPOSE_FILE} database configuration"
+  else
+    ok "${COMPOSE_FILE} database configuration check OK"
   fi
 fi
 
