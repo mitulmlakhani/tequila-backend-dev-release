@@ -10,7 +10,7 @@ set -uo pipefail
 ### Update to Latest Release
 echo "Checking latest release..."
 
-git fetch --tags --quiet
+git fetch --tags --quiet --force
 
 LATEST_TAG=$(git ls-remote --tags origin | awk -F/ '!/\^\{\}$/ {print $3}' | sort -V | tail -n1)
 

@@ -10,7 +10,7 @@ cd "$PROJECT_PATH" || { echo "Error: Could not enter project directory"; exit 1;
 echo "--- Checking for Updates ---"
 
 # 1. Fetch latest info from remote
-git fetch --tags --quiet
+git fetch --tags --quiet --force
 
 # 2. Get the latest tag name (sorted by version)
 LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
