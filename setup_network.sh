@@ -1,47 +1,82 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# 1. Detect active network details
-INTERFACE=$(ip route show default | awk '{print $5}')
-ROUTER_IP=$(ip route show default | awk '{print $3}')
+set -Eeuo pipefail
 
-if [ -z "$INTERFACE" ] || [ -z "$ROUTER_IP" ]; then
-    echo "Error: Active network interface or router IP not found."
+BACKUP_DIR="/etc/netplan/backup"
+NETPLAN_FILE="/etc/netplan/01-static-local.yaml"
+
+# Detect active interface
+INTERFACE=$(ip route | awk '/default/ {print $5; exit}')
+GATEWAY=$(ip route | awk '/default/ {print $3; exit}')
+
+if [[ -z "$INTERFACE" || -z "$GATEWAY" ]]; then
+    echo "Unable to detect default interface or gateway."
     exit 1
 fi
 
-BASE_IP=$(echo "$ROUTER_IP" | cut -d'.' -f1-3)
-STATIC_IP="$BASE_IP.200"
+# Detect current IP/prefix
+CURRENT_CIDR=$(ip -4 addr show "$INTERFACE" | awk '/inet / {print $2; exit}')
 
-echo "=== Detected Network Configurations ==="
-echo "Network Interface: $INTERFACE"
-echo "Router Gateway IP: $ROUTER_IP"
-echo "Target Static IP:  $STATIC_IP"
-echo "======================================="
+if [[ -z "$CURRENT_CIDR" ]]; then
+    echo "Unable to determine current IPv4 address."
+    exit 1
+fi
 
-# 2. Back up all current configurations safely
-sudo mkdir -p /etc/netplan/backup
-sudo cp /etc/netplan/*.yaml /etc/netplan/backup/ 2>/dev/null
+PREFIX=${CURRENT_CIDR#*/}
+NETWORK=$(echo "$GATEWAY" | awk -F. '{print $1"."$2"."$3}')
+STATIC_IP="${NETWORK}.200"
 
-# 3. Create the perfect Netplan YAML syntax
-sudo bash -c "cat << 'EOF' > /etc/netplan/01-static-local.yaml
+echo
+echo "Detected configuration"
+echo "----------------------"
+echo "Interface : $INTERFACE"
+echo "Gateway   : $GATEWAY"
+echo "Current   : $CURRENT_CIDR"
+echo "Static IP : $STATIC_IP/$PREFIX"
+echo
+
+read -rp "Apply this configuration? [y/N]: " CONFIRM
+[[ "$CONFIRM" =~ ^[Yy]$ ]] || exit 0
+
+sudo mkdir -p "$BACKUP_DIR"
+
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+sudo cp /etc/netplan/*.yaml "$BACKUP_DIR/" 2>/dev/null || true
+
+cat <<EOF | sudo tee "$NETPLAN_FILE" >/dev/null
 network:
   version: 2
   renderer: networkd
   ethernets:
     $INTERFACE:
-      dhcp4: no
+      dhcp4: false
       addresses:
-        - $STATIC_IP/24
+        - $STATIC_IP/$PREFIX
       routes:
         - to: default
-          via: $ROUTER_IP
+          via: $GATEWAY
       nameservers:
         addresses:
-EOF"
+          - $GATEWAY
+          - 1.1.1.1
+          - 8.8.8.8
+EOF
 
-# 4. Clean up old configuration files to prevent IP conflicts
-sudo rm /etc/netplan/50-cloud-init.yaml /etc/netplan/00-installer-config.yaml 2>/dev/null
+echo "Generated:"
+echo
+cat "$NETPLAN_FILE"
+echo
 
-# 5. Try the changes safely with a fallback timeout
-echo "Testing configuration... If your terminal freezes, wait 60 seconds for an auto-rollback."
-sudo netplan try --timeout 60
+echo "Validating..."
+
+sudo netplan generate
+
+echo
+echo "Applying with rollback protection..."
+
+sudo netplan try --timeout 120
+
+echo
+echo "Network configuration applied successfully."
+echo "Allocated Static IP: ${STATIC_IP}"
