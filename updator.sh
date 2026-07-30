@@ -152,7 +152,7 @@ log "✅ Database migrations completed."
 # ── 7. Optimize Laravel Caches ───────────────────────────────────────────────
 log "⚡ Clearing and rebuilding Laravel caches..."
 docker compose exec -T appserver php artisan config:cache --no-interaction >> "$LOG_FILE" 2>&1 || true
-docker compose exec -T appserver php artisan route:cache --no-interaction >> "$LOG_FILE" 2>&1 || true
+docker compose exec -T appserver php artisan route:clear --no-interaction >> "$LOG_FILE" 2>&1 || true
 docker compose exec -T appserver php artisan view:cache --no-interaction >> "$LOG_FILE" 2>&1 || true
 docker compose exec -T appserver bash -c "chown -R www-data:www-data storage bootstrap/cache 2>/dev/null && chmod -R 777 storage bootstrap/cache 2>/dev/null" || true
 chmod -R 777 storage bootstrap/cache 2>/dev/null || sudo chmod -R 777 storage bootstrap/cache 2>/dev/null || true
