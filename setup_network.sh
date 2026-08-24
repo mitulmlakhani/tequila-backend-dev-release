@@ -218,7 +218,15 @@ echo "Validating..."
 $SUDO netplan generate
 
 echo
-echo "Applying..."
+echo "======================================================================="
+echo "Applying new network configuration..."
+echo "Your SSH session will now drop (Connection reset)."
+echo "Please reconnect using the new Static IP: ${STATIC_IP}"
+echo "======================================================================="
+echo "Note: this address was verified free at scan time, but to permanently"
+echo "guarantee it, reserve this IP for this machine's MAC address in your"
+echo "router's DHCP settings."
+echo
 
 $SUDO netplan apply
 
@@ -250,9 +258,3 @@ fi
 
 echo
 echo "Network configuration applied successfully."
-echo "Allocated Static IP: ${STATIC_IP}"
-echo
-echo "Note: this address was verified free at scan time and re-checked after"
-echo "applying, but this cannot guarantee the router's DHCP server will never"
-echo "hand it to another device later. For a permanent guarantee, reserve"
-echo "this IP for this machine's MAC address in the router's DHCP settings."
