@@ -206,6 +206,8 @@ network:
           - 8.8.8.8
 EOF
 
+$SUDO chmod 600 "$NETPLAN_FILE"
+
 echo "Generated:"
 echo
 cat "$NETPLAN_FILE"
@@ -216,9 +218,9 @@ echo "Validating..."
 $SUDO netplan generate
 
 echo
-echo "Applying with rollback protection..."
+echo "Applying..."
 
-$SUDO netplan try --timeout 120
+$SUDO netplan apply
 
 echo
 echo "Checking for a duplicate-IP conflict after applying..."
