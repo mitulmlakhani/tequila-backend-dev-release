@@ -24,10 +24,10 @@ DRIVER_SET="${DRIVER_SET:-lite}"          # lite | common | full
 TZ_VALUE="${TZ_VALUE:-America/Chicago}"
 BACKEND_PORT="${BACKEND_PORT:-3000}"
 
-# Host ports — changed from the defaults (80, 6000, 3306) because those are
+# Host ports — changed from the defaults (80, 6001, 3306) because those are
 # already in use by other apps on this server.
 FRONTEND_PORT="${FRONTEND_PORT:-8080}"
-WEBSOCKET_PORT="${WEBSOCKET_PORT:-6000}"
+WEBSOCKET_PORT="${WEBSOCKET_PORT:-6001}"
 MYSQL_PORT="${MYSQL_PORT:-3306}"          # Port 3306 of shared tequila-database
 MYSQL_HOST="${MYSQL_HOST:-host.docker.internal}"
 MYSQL_CONTAINER="${MYSQL_CONTAINER:-tequila-database}"
@@ -189,7 +189,7 @@ ok "Wrote ${APP_DIR}/.env (chmod 600)"
 step "Step 5b/9: Checking docker-compose.yml for port conflicts"
 if [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
   COMPOSE_FILE=$( [ -f docker-compose.yml ] && echo docker-compose.yml || echo docker-compose.yaml )
-  for p in 80 6000; do
+  for p in 80 6001; do
     if grep -Eq "\"?${p}:[0-9]+\"?" "${COMPOSE_FILE}"; then
       echo -e "${c_yellow}Warning:${c_reset} ${COMPOSE_FILE} still hard-codes host port ${p}, which is already in use."
       echo "         Update its port mapping to use \${FRONTEND_PORT} or \${WEBSOCKET_PORT}"
@@ -199,7 +199,7 @@ if [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
 else
   echo -e "${c_yellow}Note:${c_reset} no docker-compose.yml found yet in ${APP_DIR} — skipping port conflict check."
   echo "      Once it's in place, make sure it maps ports via \${FRONTEND_PORT}, \${WEBSOCKET_PORT}"
-  echo "      rather than hard-coded 80 / 6000."
+  echo "      rather than hard-coded 80 / 6001."
 fi
 
 # ============================================================================
@@ -451,7 +451,7 @@ echo -e "${c_green} Installation complete!${c_reset}"
 echo -e "${c_green}=====================================================${c_reset}"
 echo "  Frontend:      http://localhost:${FRONTEND_PORT}"
 echo "  Backend API:   http://localhost:${BACKEND_PORT}/api"
-echo "  WebSocket:     localhost:${WEBSOCKET_PORT} (was 6000)"
+echo "  WebSocket:     localhost:${WEBSOCKET_PORT} (was 6001)"
 echo "  MySQL:         shared instance (${MYSQL_CONTAINER:-tequila-database}) on port ${MYSQL_PORT}"
 echo "  App directory: ${APP_DIR}"
 echo "  Secrets file:  ${APP_DIR}/.env (chmod 600 — keep this safe)"
