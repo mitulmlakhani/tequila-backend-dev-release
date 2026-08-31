@@ -2,6 +2,15 @@
 
 set -Eeuo pipefail
 
+if [[ -z "${1:-}" ]]; then
+    echo "Usage: $0 <gateway>"
+    echo "Example: $0 192.168.0.1"
+    echo "Get Gateway"
+    echo "Windows Powershell: (Get-NetIPConfiguration).IPv4DefaultGateway.NextHop"
+    echo "Linux: ip route | awk '\$1==\"default\" {print \$3; exit}'"
+    exit 1
+fi
+
 BACKUP_DIR="/etc/netplan/backup"
 NETPLAN_FILE="/etc/netplan/01-static-local.yaml"
 
@@ -63,7 +72,23 @@ fi
 
 # Detect active interface
 INTERFACE=$(ip route | awk '/default/ {print $5; exit}')
-GATEWAY=$(ip route | awk '/default/ {print $3; exit}')
+# GATEWAY=$(ip route | awk '/default/ {print $3; exit}')
+GATEWAY="$1"
+
+# Validate gateway IPv4 address
+if ! [[ "$GATEWAY" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+    echo "Invalid gateway address: $GATEWAY"
+    exit 1
+fi
+
+IFS='.' read -r G1 G2 G3 G4 <<< "$GATEWAY"
+
+for octet in "$G1" "$G2" "$G3" "$G4"; do
+    if (( octet < 0 || octet > 255 )); then
+        echo "Invalid gateway address: $GATEWAY"
+        exit 1
+    fi
+done
 
 if [[ -z "$INTERFACE" || -z "$GATEWAY" ]]; then
     echo "Unable to detect default interface or gateway."
