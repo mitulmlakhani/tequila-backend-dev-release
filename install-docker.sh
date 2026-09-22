@@ -22,3 +22,22 @@ newgrp docker
 # Verify installation
 docker --version
 docker compose version
+
+#Install Avahi
+HOSTNAME="tequila"
+
+if [[ "$(hostnamectl --static)" != "$HOSTNAME" ]]; then
+    echo "Setting hostname: $HOSTNAME"
+    sudo hostnamectl set-hostname "$HOSTNAME"
+fi
+
+echo "Enabling Avahi/mDNS..."
+
+sudo systemctl enable --now avahi-daemon
+
+if ! sudo systemctl is-active --quiet avahi-daemon; then
+    echo "Failed to start avahi-daemon."
+    exit 1
+fi
+
+echo "Avahi is running: ${HOSTNAME}.local"

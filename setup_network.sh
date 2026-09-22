@@ -135,7 +135,7 @@ NETWORK=$(echo "$GATEWAY" | awk -F. '{print $1"."$2"."$3}')
 
 echo "Scanning for a free static IP on ${NETWORK}.0/24 ..."
 
-CANDIDATE_HOST_MIN=200
+CANDIDATE_HOST_MIN=99
 CANDIDATE_HOST_MAX=254
 HAVE_ARPING=false
 command -v arping &>/dev/null && HAVE_ARPING=true
@@ -164,7 +164,7 @@ if ! $HAVE_ARPING; then
     echo "Note: 'arping' still unavailable, falling back to ping-only checks (less reliable)."
 fi
 
-for host in $(seq "$CANDIDATE_HOST_MAX" -1 "$CANDIDATE_HOST_MIN"); do
+for host in $(seq "$CANDIDATE_HOST_MIN" 1 "$CANDIDATE_HOST_MAX"); do
     CANDIDATE="${NETWORK}.${host}"
 
     # Skip broadcast, the gateway, and our own current address

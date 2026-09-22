@@ -17,6 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Chromium needs a writable user-data directory when running as www-data
+RUN mkdir -p /var/www/.chromium && chown -R www-data:www-data /var/www/.chromium && chmod 700 /var/www/.chromium
+
 # Install required PHP extensions
 RUN install-php-extensions pdo_mysql bcmath pcntl opcache zip gd gmp intl exif sockets
 
