@@ -23,7 +23,7 @@ cd "$PROJECT_PATH" || { echo "❌ Error: Could not enter project directory $PROJ
 
 # Create directory structure and set permissions right away
 mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
-chmod -R 777 storage bootstrap/cache 2>/dev/null || sudo chmod -R 777 storage bootstrap/cache 2>/dev/null || true
+chmod -R 777 storage bootstrap/cache 2>/dev/null || true
 LOG_FILE="$PROJECT_PATH/storage/logs/auto-update.log"
 
 log() {
@@ -155,7 +155,7 @@ docker compose exec -T appserver php artisan config:cache --no-interaction >> "$
 docker compose exec -T appserver php artisan route:clear --no-interaction >> "$LOG_FILE" 2>&1 || true
 docker compose exec -T appserver php artisan view:cache --no-interaction >> "$LOG_FILE" 2>&1 || true
 docker compose exec -T appserver bash -c "chown -R www-data:www-data storage bootstrap/cache 2>/dev/null && chmod -R 777 storage bootstrap/cache 2>/dev/null" || true
-chmod -R 777 storage bootstrap/cache 2>/dev/null || sudo chmod -R 777 storage bootstrap/cache 2>/dev/null || true
+chmod -R 777 storage bootstrap/cache 2>/dev/null || true
 log "✅ Laravel caches rebuilt and permissions synced."
 
 # ── 8. Zero/Near-Zero Downtime Graceful Reload ───────────────────────────────
