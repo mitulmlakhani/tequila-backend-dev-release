@@ -38,8 +38,8 @@ services:
       BROWSERSHOT_NODE_BINARY: "/usr/bin/node"
       BROWSERSHOT_NPM_BINARY: "/usr/bin/npm"
       BROWSERSHOT_CHROME_PATH: "/usr/bin/chromium"
-      RESTAURANT_ID: "88"
-      CLOUD_API_AUTH_KEY: "7b9d9633-b898-4280-902e-f0c81575ed45"
+      RESTAURANT_ID: ""
+      CLOUD_API_AUTH_KEY: ""
     depends_on:
       database:
         condition: service_healthy

@@ -33,6 +33,8 @@ fi
 
 read -rp "Enter RESTAURANT_ID: " RESTAURANT_ID
 read -rp "Enter CLOUD_API_AUTH_KEY: " CLOUD_API_AUTH_KEY
+read -rp "Enter CLOUD_URL [https://tequilapos.net]: " CLOUD_URL
+CLOUD_URL="${CLOUD_URL:-https://tequilapos.net}"
 
 if [ -z "$RESTAURANT_ID" ] || [ -z "$CLOUD_API_AUTH_KEY" ]; then
   echo "❌ Both RESTAURANT_ID and CLOUD_API_AUTH_KEY are required."
@@ -48,15 +50,17 @@ sedi() {
   sed -i.bak "$1" "$2" && rm -f "$2.bak"
 }
 
-echo "🔧 Updating RESTAURANT_ID / CLOUD_API_AUTH_KEY..."
+echo "🔧 Updating RESTAURANT_ID / CLOUD_API_AUTH_KEY / CLOUD_URL..."
 
 # --- docker-compose.yml (YAML style:  KEY: "value") --------------------------
 sedi "s/RESTAURANT_ID: \"[^\"]*\"/RESTAURANT_ID: \"${RESTAURANT_ID}\"/" "$DOCKER_COMPOSE_YML"
 sedi "s/CLOUD_API_AUTH_KEY: \"[^\"]*\"/CLOUD_API_AUTH_KEY: \"${CLOUD_API_AUTH_KEY}\"/" "$DOCKER_COMPOSE_YML"
+sedi "s|CLOUD_URL: \"[^\"]*\"|CLOUD_URL: \"${CLOUD_URL}\"|" "$DOCKER_COMPOSE_YML"
 
 # --- supervisord.conf (ini/env style:  KEY="value") --------------------------
 sedi "s/RESTAURANT_ID=\"[^\"]*\"/RESTAURANT_ID=\"${RESTAURANT_ID}\"/g" "$SUPERVISOR_CONF"
 sedi "s/CLOUD_API_AUTH_KEY=\"[^\"]*\"/CLOUD_API_AUTH_KEY=\"${CLOUD_API_AUTH_KEY}\"/g" "$SUPERVISOR_CONF"
+sedi "s|CLOUD_URL=\"[^\"]*\"|CLOUD_URL=\"${CLOUD_URL}\"|g" "$SUPERVISOR_CONF"
 
 echo "✅ Config updated."
 
