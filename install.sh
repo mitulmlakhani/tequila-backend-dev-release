@@ -52,15 +52,41 @@ sedi() {
 
 echo "🔧 Updating RESTAURANT_ID / CLOUD_API_AUTH_KEY / CLOUD_URL..."
 
+# --- .env --------------------------------------------------------------------
+ENV_FILE=".env"
+
+if [ ! -f "$ENV_FILE" ]; then
+  if [ -f ".env.example" ]; then
+    cp .env.example "$ENV_FILE"
+  else
+    touch "$ENV_FILE"
+  fi
+fi
+
+set_env_value() {
+  local key="$1"
+  local value="$2"
+
+  if grep -q "^${key}=" "$ENV_FILE"; then
+    sed -i.bak "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+    rm -f "$ENV_FILE.bak"
+  else
+    echo "${key}=${value}" >> "$ENV_FILE"
+  fi
+}
+
+set_env_value "RESTAURANT_ID" "$RESTAURANT_ID"
+set_env_value "CLOUD_API_AUTH_KEY" "$CLOUD_API_AUTH_KEY"
+set_env_value "CLOUD_URL" "$CLOUD_URL"
+
 # --- docker-compose.yml (YAML style:  KEY: "value") --------------------------
 sedi "s/RESTAURANT_ID: \"[^\"]*\"/RESTAURANT_ID: \"${RESTAURANT_ID}\"/" "$DOCKER_COMPOSE_YML"
 sedi "s/CLOUD_API_AUTH_KEY: \"[^\"]*\"/CLOUD_API_AUTH_KEY: \"${CLOUD_API_AUTH_KEY}\"/" "$DOCKER_COMPOSE_YML"
 sedi "s|CLOUD_URL: \"[^\"]*\"|CLOUD_URL: \"${CLOUD_URL}\"|" "$DOCKER_COMPOSE_YML"
 
-# --- supervisord.conf (ini/env style:  KEY="value") --------------------------
-sedi "s/RESTAURANT_ID=\"[^\"]*\"/RESTAURANT_ID=\"${RESTAURANT_ID}\"/g" "$SUPERVISOR_CONF"
-sedi "s/CLOUD_API_AUTH_KEY=\"[^\"]*\"/CLOUD_API_AUTH_KEY=\"${CLOUD_API_AUTH_KEY}\"/g" "$SUPERVISOR_CONF"
-sedi "s|CLOUD_URL=\"[^\"]*\"|CLOUD_URL=\"${CLOUD_URL}\"|g" "$SUPERVISOR_CONF"
+# --- supervisord.conf --------------------------------------------------------
+# RESTAURANT_ID / CLOUD_API_AUTH_KEY / CLOUD_URL are intentionally NOT added
+# to Supervisor. They are inherited from the Docker container environment.
 
 echo "✅ Config updated."
 
