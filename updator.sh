@@ -23,6 +23,34 @@ cd "$PROJECT_PATH" || { echo "❌ Error: Could not enter project directory $PROJ
 
 # Create directory structure and set permissions right away
 mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+# Preserve machine-specific environment values before Git checkout
+ENV_FILE="$PROJECT_PATH/.env"
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "❌ Error: .env file not found."
+    exit 1
+fi
+
+get_env_value() {
+    local key="$1"
+
+    grep -E "^${key}=" "$ENV_FILE" \
+        | tail -n1 \
+        | cut -d '=' -f2-
+}
+
+RESTAURANT_ID=$(get_env_value "RESTAURANT_ID")
+CLOUD_API_AUTH_KEY=$(get_env_value "CLOUD_API_AUTH_KEY")
+CLOUD_URL=$(get_env_value "CLOUD_URL")
+
+if [ -z "$RESTAURANT_ID" ] || [ -z "$CLOUD_API_AUTH_KEY" ]; then
+    echo "❌ Error: RESTAURANT_ID and CLOUD_API_AUTH_KEY must exist in .env."
+    exit 1
+fi
+
+CLOUD_URL="${CLOUD_URL:-https://tequilapos.net}"
+
 chmod -R 777 storage bootstrap/cache 2>/dev/null || true
 LOG_FILE="$PROJECT_PATH/storage/logs/auto-update.log"
 
@@ -64,8 +92,6 @@ log "=========================================================="
 # ── 1. Fetch tags and check for update ───────────────────────────────────────
 log "Fetching latest tags from remote repository..."
 
-git fetch --tags --quiet --force
-
 git config --global --add safe.directory "$PROJECT_PATH" || {
     log "❌ Error: Failed to set safe.directory for Git."
     exit 1
@@ -73,7 +99,7 @@ git config --global --add safe.directory "$PROJECT_PATH" || {
 
 FETCH_OK=0
 for attempt in 1 2 3; do
-    FETCH_OUTPUT=$(git fetch --tags 2>&1)
+    FETCH_OUTPUT=$(git fetch --tags --force 2>&1)
     if [ $? -eq 0 ]; then
         FETCH_OK=1
         break
@@ -127,10 +153,43 @@ git checkout "$LATEST_TAG" --quiet || {
 }
 log "✅ Successfully checked out to $LATEST_TAG!"
 
+# Restore machine-specific values into docker-compose.yml
+log "🔧 Restoring local Docker configuration..."
+
+sedi() {
+    sed -i.bak "$1" "$2" && rm -f "$2.bak"
+}
+
+sedi "s/RESTAURANT_ID: \"[^\"]*\"/RESTAURANT_ID: \"${RESTAURANT_ID}\"/" "$PROJECT_PATH/docker-compose.yml"
+sedi "s/CLOUD_API_AUTH_KEY: \"[^\"]*\"/CLOUD_API_AUTH_KEY: \"${CLOUD_API_AUTH_KEY}\"/" "$PROJECT_PATH/docker-compose.yml"
+sedi "s|CLOUD_URL: \"[^\"]*\"|CLOUD_URL: \"${CLOUD_URL}\"|" "$PROJECT_PATH/docker-compose.yml"
+
+log "✅ Local Docker configuration restored."
+
+if ! grep -Fq "RESTAURANT_ID: \"${RESTAURANT_ID}\"" "$PROJECT_PATH/docker-compose.yml"; then
+    log "❌ Error: Failed to restore RESTAURANT_ID in docker-compose.yml."
+    exit 1
+fi
+
+if ! grep -Fq "CLOUD_API_AUTH_KEY: \"${CLOUD_API_AUTH_KEY}\"" "$PROJECT_PATH/docker-compose.yml"; then
+    log "❌ Error: Failed to restore CLOUD_API_AUTH_KEY in docker-compose.yml."
+    exit 1
+fi
+
+if ! grep -Fq "CLOUD_URL: \"${CLOUD_URL}\"" "$PROJECT_PATH/docker-compose.yml"; then
+    log "❌ Error: Failed to restore CLOUD_URL in docker-compose.yml."
+    exit 1
+fi
+
+log "✅ Docker configuration values verified."
+
 # ── 4. Verify Docker containers are running ───────────────────────────────────
 if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -qiE '(tequila-appserver|appserver)'; then
     log "⚠️  Docker containers are currently stopped. Starting Docker services..."
-    docker compose up -d >> "$LOG_FILE" 2>&1
+    docker compose up -d >> "$LOG_FILE" 2>&1 || {
+        log "❌ Error: Failed to start Docker services."
+        exit 1
+    }
 fi
 
 # ── 5. Install PHP dependencies via Docker ────────────────────────────────────
@@ -161,14 +220,38 @@ log "✅ Laravel caches rebuilt and permissions synced."
 # ── 8. Zero/Near-Zero Downtime Graceful Reload ───────────────────────────────
 if [ "$DOCKER_CONFIG_CHANGED" -eq 1 ]; then
     log "🔄 Performing full Docker build & restart to apply container configuration changes..."
-    docker compose up -d --build --force-recreate >> "$LOG_FILE" 2>&1
+    docker compose up -d --build --force-recreate >> "$LOG_FILE" 2>&1 || {
+        log "❌ Error: Docker build/restart failed."
+        exit 1
+    }
     log "Reloading supervisor background workers..."
-    docker compose exec -T appserver supervisorctl update && docker compose exec -T appserver supervisorctl restart all >> "$LOG_FILE" 2>&1 || true
+    docker compose exec -T appserver supervisorctl update >> "$LOG_FILE" 2>&1 || {
+        log "❌ Error: Supervisor update failed."
+        exit 1
+    }
+    docker compose exec -T appserver supervisorctl restart all >> "$LOG_FILE" 2>&1 || {
+        log "❌ Error: Supervisor restart failed."
+        exit 1
+    }
     log "✅ Full Docker restart completed."
 else
     log "✨ Option 1 Graceful Reload: Reloading queue workers & Apache with ZERO downtime..."
-    docker compose exec -T appserver supervisorctl update && docker compose exec -T appserver supervisorctl restart all >> "$LOG_FILE" 2>&1 || true
-    docker compose exec -T appserver apachectl -k graceful 2>/dev/null || docker compose exec -T appserver service apache2 reload 2>/dev/null || true
+    docker compose exec -T appserver supervisorctl update >> "$LOG_FILE" 2>&1 || {
+        log "❌ Error: Supervisor update failed."
+        exit 1
+    }
+    docker compose exec -T appserver supervisorctl restart all >> "$LOG_FILE" 2>&1 || {
+        log "❌ Error: Supervisor restart failed."
+        exit 1
+    }
+    if docker compose exec -T appserver apachectl -k graceful >> "$LOG_FILE" 2>&1; then
+        log "✅ Apache graceful reload completed."
+    elif docker compose exec -T appserver service apache2 reload >> "$LOG_FILE" 2>&1; then
+        log "✅ Apache reload completed."
+    else
+        log "❌ Error: Apache reload failed."
+        exit 1
+    fi
     log "✅ Graceful reload completed seamlessly!"
 fi
 

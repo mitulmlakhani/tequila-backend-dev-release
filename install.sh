@@ -97,7 +97,7 @@ chmod -R 777 storage bootstrap/cache 2>/dev/null || sudo chmod -R 777 storage bo
 
 # --- Start Docker -------------------------------------------------------------
 echo "🚀 Starting Docker containers..."
-docker compose up -d --build
+docker compose up -d --build --force-recreate
 
 # --- Ensure permissions inside container after start --------------------------
 echo "🔒 Fixing storage and bootstrap/cache directory permissions across host and container..."
