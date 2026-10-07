@@ -37,7 +37,8 @@ get_env_value() {
 
     grep -E "^${key}=" "$ENV_FILE" \
         | tail -n1 \
-        | cut -d '=' -f2-
+        | cut -d '=' -f2- \
+        | sed 's/^"//; s/"$//'
 }
 
 RESTAURANT_ID=$(get_env_value "RESTAURANT_ID")
