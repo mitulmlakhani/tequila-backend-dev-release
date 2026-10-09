@@ -12,7 +12,7 @@
     "redis": {
       "host": "cache",
       "port": "6379",
-      "keyPrefix": "tequila_pos_offline_database_"
+      "keyPrefix": "tequila_live_"
     }
   },
   "devMode": true,
