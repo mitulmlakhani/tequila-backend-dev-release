@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Socket Dev</title>
+  <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2.4.0/dist/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.11.3/dist/echo.iife.js"></script>
+</head>
+<body>
+  <h1>Listening for order.updated on order_updates.32</h1>
+  <pre id="log">Waiting for event...</pre>
+
+  <script>
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      el.textContent += "\n" + msg;
+      console.log(msg);
+    };
+
+    const echo = new Echo({
+      broadcaster: 'socket.io',
+      host: 'http://localhost:6002',
+      client: io,
+      transports: ['websocket'],
+    });
+
+    const socket = io('http://localhost:6002', {
+      transports: ['websocket'],
+    });
+
+    socket.on('connect', () => {
+      log('🟢 Socket.IO connected');
+    });
+
+    // 👇 Subscribe to "private-teq_private-order_updates.32"
+    // echo.private('order_updates_.32')
+    echo.channel('order_updates_.32')
+      .subscribed(() => {
+        log('🟢 Subscribed to order_updates.32');
+      })
+      .listen('.item.updated', (data) => {
+        log('📦 item.updated received!');
+        log(JSON.stringify(data, null, 2));
+      });
+
+    socket.on('disconnect', () => {
+      log('🔌 Disconnected');
+    });
+
+    socket.on('connect_error', (err) => {
+      log('❌ Connection error: ' + err.message);
+    });
+    </script>
+</body>
+</html>

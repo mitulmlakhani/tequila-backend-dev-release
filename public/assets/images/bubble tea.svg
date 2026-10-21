@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="19.511" height="27.083" viewBox="0 0 19.511 27.083">
+  <g id="bubble_tea" data-name="bubble tea" transform="translate(-13.5 -0.5)">
+    <path id="Path_202" data-name="Path 202" d="M27.883,16.68c.8.4,1.262.879,1.262,1.4,0,1.392-3.391,2.524-7.573,2.524S14,19.469,14,18.077c0-.517.463-1,1.262-1.4" transform="translate(0 -9.084)" fill="none" stroke="#474747" stroke-miterlimit="10" stroke-width="1"/>
+    <path id="Path_203" data-name="Path 203" d="M14,20v2.524c0,1.392,3.391,2.524,7.573,2.524s7.573-1.132,7.573-2.524V20" transform="translate(0 -11.007)" fill="none" stroke="#474747" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="Line_45" data-name="Line 45" x1="1.41" y1="12.689" transform="translate(14.887 12.984)" fill="none" stroke="#474747" stroke-linecap="round" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="Line_46" data-name="Line 46" x1="1.41" y2="12.689" transform="translate(26.871 12.984)" fill="none" stroke="#474747" stroke-linecap="round" stroke-miterlimit="10" stroke-width="1"/>
+    <ellipse id="Ellipse_41" data-name="Ellipse 41" cx="5.287" cy="1.762" rx="5.287" ry="1.762" transform="translate(16.297 23.558)" fill="none" stroke="#474747" stroke-miterlimit="10" stroke-width="1"/>
+    <path id="Path_204" data-name="Path 204" d="M29.621,8.731c0,.93-2.827,1.683-6.31,1.683S17,9.661,17,8.731V8.31a6.31,6.31,0,0,1,12.621,0Z" transform="translate(-1.738 -0.579)" fill="none" stroke="#474747" stroke-linecap="round" stroke-miterlimit="10" stroke-width="1"/>
+    <ellipse id="Ellipse_42" data-name="Ellipse 42" cx="1.057" cy="0.705" rx="1.057" ry="0.705" transform="translate(23.346 4.525)" fill="#474747"/>
+    <path id="Path_205" data-name="Path 205" d="M39,5.207l2.713-3.74A.841.841,0,0,1,42.467,1h4.527" transform="translate(-14.483)" fill="none" stroke="#474747" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+    <circle id="Ellipse_43" data-name="Ellipse 43" cx="1.057" cy="1.057" r="1.057" transform="translate(23.346 17.214)" fill="none" stroke="#474747" stroke-miterlimit="10" stroke-width="1"/>
+    <circle id="Ellipse_44" data-name="Ellipse 44" cx="1.41" cy="1.41" r="1.41" transform="translate(20.526 18.624)" fill="none" stroke="#474747" stroke-miterlimit="10" stroke-width="1"/>
+    <ellipse id="Ellipse_45" data-name="Ellipse 45" cx="0.705" cy="1.057" rx="0.705" ry="1.057" transform="translate(24.756 20.034)" fill="none" stroke="#474747" stroke-miterlimit="10" stroke-width="1"/>
+    <ellipse id="Ellipse_46" data-name="Ellipse 46" cx="0.705" cy="1.057" rx="0.705" ry="1.057" transform="translate(17.002 20.034)" fill="none" stroke="#474747" stroke-miterlimit="10" stroke-width="1"/>
+    <circle id="Ellipse_47" data-name="Ellipse 47" cx="1.41" cy="1.41" r="1.41" transform="translate(17.707 17.214)" fill="none" stroke="#474747" stroke-miterlimit="10" stroke-width="1"/>
+    <line id="Line_47" data-name="Line 47" y1="0.705" x2="0.705" transform="translate(16.297 15.804)" fill="none" stroke="#474747" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+    <line id="Line_48" data-name="Line 48" y2="0.705" transform="translate(21.231 15.804)" fill="none" stroke="#474747" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+    <line id="Line_49" data-name="Line 49" x2="0.705" transform="translate(26.166 15.804)" fill="none" stroke="#474747" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+  </g>
+</svg>

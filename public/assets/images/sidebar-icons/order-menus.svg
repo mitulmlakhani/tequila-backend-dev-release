@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20.1" height="20.1" viewBox="0 0 20.1 20.1">
+  <g id="menu-boxed" transform="translate(-6 -6)">
+    <g id="Group_15" data-name="Group 15" transform="translate(6 6)">
+      <path id="Path_13" data-name="Path 13" d="M15.146,13.964a1.12,1.12,0,1,0,0,2.24h8.878a1.12,1.12,0,1,0,0-2.24Z" transform="translate(-9.545 -9.517)" fill="#fff"/>
+      <path id="Path_14" data-name="Path 14" d="M14.032,23.114a1.119,1.119,0,0,1,1.117-1.12h8.878a1.12,1.12,0,1,1,0,2.24H15.149A1.119,1.119,0,0,1,14.032,23.114Z" transform="translate(-9.547 -13.064)" fill="#fff"/>
+      <path id="Path_15" data-name="Path 15" d="M15.164,30.024a1.121,1.121,0,1,0,0,2.241h8.878a1.121,1.121,0,1,0,0-2.241Z" transform="translate(-9.552 -16.61)" fill="#fff"/>
+      <path id="Path_16" data-name="Path 16" d="M6,9.35A3.35,3.35,0,0,1,9.35,6h13.4A3.35,3.35,0,0,1,26.1,9.35v13.4a3.35,3.35,0,0,1-3.35,3.35H9.35A3.35,3.35,0,0,1,6,22.75ZM9.35,8.233h13.4A1.117,1.117,0,0,1,23.867,9.35v13.4a1.117,1.117,0,0,1-1.117,1.117H9.35A1.117,1.117,0,0,1,8.233,22.75V9.35A1.117,1.117,0,0,1,9.35,8.233Z" transform="translate(-6 -6)" fill="#fff" fill-rule="evenodd"/>
+    </g>
+  </g>
+</svg>

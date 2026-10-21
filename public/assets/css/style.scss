@@ -1,0 +1,958 @@
+$primeryColor: #0980B2;
+$secondryColor:#2D2C2C;
+$lightBlue: #AAD5FF;
+$mainContent:#646161;
+$sidebarHover:#075F84;
+$whiteShade:#FFF;
+$sucessColor:#33B715;
+$failedColor:#FF4E28;
+$warningColor:#C57416;
+$bodyColor:#EFEEEE;
+$backgroundColor:#33B715;
+$statusReserved:#EFFEF1;
+$statusPending:#FEEAE6;
+$editColor:#c87c23;
+$tabLayoutBorder:#b8b8b8;
+$main-heading: 25px;
+$commonFont:16px;
+$borderRadius:5px;
+$fontFamily: 'Poppins', sans-serif;
+
+
+@mixin Body{
+  width: 100%;
+    height: 100%;
+    font-family: $fontFamily;
+    background-color: $bodyColor;
+    color: $mainContent;
+}
+
+@mixin buttonStyle{
+    background-color: $primeryColor;
+    min-width: 160px;
+    color: $whiteShade;
+    height: 40px;
+    text-align: center;
+    display: inline-block;
+    line-height: 40px;
+    border-radius: 5px;  
+    padding: 0px 10px;
+}
+
+@mixin Sidebar{
+    background-color: $primeryColor;
+    color: $whiteShade;
+    width: 300px;
+    transition: 1s;
+    height: 100%;
+    position: fixed;
+    z-index: 1;
+    top:70px;
+    left: 0;
+    overflow-x: hidden;
+    padding-bottom: 100px;
+}
+
+@mixin status{
+    width: 114px;
+    padding: 5px 0px;
+    text-align: center;
+    border-radius: 42px;
+}
+
+@mixin mainheading-buttonSet{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+
+}
+@mixin globalbtn{
+    background-color: $primeryColor;
+    min-width: 130px;
+    color: $whiteShade;
+    height: 40px;
+    text-align: center;
+    display: inline-block;
+    line-height: 0px;
+    border-radius: 5px;
+}
+
+@mixin checkbox{
+    width: 20px;
+    height: 20px;
+}
+
+@mixin SidebarSet{
+  position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 300px;
+    z-index: 100;
+    transition: all 1s ease;
+    background: $primeryColor;
+}
+@mixin GlobalSearch{
+  border-radius: 40px;
+    background-color: $bodyColor;
+    border: none;
+    padding: 0px 50px 0px 20px;
+    color: $secondryColor;
+}
+@mixin setupLayout{
+  width: 70%;
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  flex-direction: column;
+}
+@mixin tabLayout{
+  width: 100%;
+  padding: 35px 0px;
+  border-radius: 5px 5px 0px 0px;
+  border: 2px solid $tabLayoutBorder;
+  background: $whiteShade;
+}
+@mixin loginMiddlebox{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+}
+@mixin loginFormBg{
+  background-image: url("../images/login-bg.jpg");
+  background-color: #cccccc;
+  height: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: relative;
+}
+@mixin globalOverlay{
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  background: #0980b2c7;
+  width: 100%;
+  height: 100%;
+}
+@mixin loginLeftContent{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 100px;
+}
+@mixin rightFormSet{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 50px;
+  background: $whiteShade;
+  border-radius: 0px 10px 10px 0px;
+}
+
+@mixin customCommonBtn{
+  border: none;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 1px 1px 19px #b0b0b25c;
+  padding: 31px 10px;
+  border-radius: 5px;
+  width: 80%;
+}
+@mixin avatarLabel{
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  margin-bottom: 0;
+  border-radius: 100%;
+  background: #FFFFFF;
+  border: 1px solid transparent;
+  box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  font-weight: normal;
+  transition: all 0.2s ease-in-out;
+}
+@mixin avatarPreview{
+  width: 192px;
+  height: 192px;
+  position: relative;
+  border-radius: 100%;
+  border: 6px solid #45c4fa;
+  box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.1);
+  background-image: url(../../assets/images/default-user.jpg);
+  background-size: 100% 100%;
+}
+@mixin avatarEdit{
+  content: "\ea21";
+  font-family: "boxicons";
+  color: #0980b2;
+  position: absolute;
+  top: 7px;
+  left: 0px;
+  right: 0;
+  font-size: 26px;
+  text-align: center;
+  margin: auto;
+}
+/*CSS Start*/
+
+*{
+padding: 0;
+margin: 0;
+box-sizing: border-box;
+font-family: $fontFamily;
+
+}
+
+body{
+@include Body();
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  line-height: 1.2;
+  font-family: $fontFamily;
+}
+table.table.table-bordered.role_table tbody tr:nth-child(1) {
+  font-weight: 600;
+}
+a.active {
+  /* background: #096a93; */
+  border-left: 3px solid white;
+}
+.btn-check:active + .btn-secondary:focus, .btn-check:checked + .btn-secondary:focus, .btn-secondary.active:focus, .btn-secondary:active:focus, .show > .btn-secondary.dropdown-toggle:focus {
+    box-shadow: 0 0 0 0.25rem rgb(130 138 145 / 0%);
+    outline: none;
+}
+button:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: 0 0 0 0.25rem rgb(130 138 145 / 0%);
+}
+
+table.dataTable thead th, table.dataTable thead td {
+    font-weight: 500;
+}
+a {
+    text-decoration: none;
+}
+table#floormanagement tr td {
+  background: transparent;
+  box-shadow: inset 0 0 0 9999px rgb(0 0 0 / 0%);
+}
+
+.accordion-button:not(.collapsed) {
+  color: $primeryColor;
+  background-color: $lightBlue;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.125);
+  font-weight: 500;
+}
+table.dataTable.display>tbody>tr.odd>.sorting_1, table.dataTable.order-column.stripe>tbody>tr.odd>.sorting_1 {
+  box-shadow: inset 0 0 0 9999px rgb(249 249 249);
+}
+table.dataTable.display>tbody>tr.even>.sorting_1, table.dataTable.order-column.stripe>tbody>tr.even>.sorting_1 {
+  box-shadow: inset 0 0 0 9999px rgb(255 255 255 / 2%);
+}
+.add-rolpermision h6{
+  color: $primeryColor;
+}
+.edit-rolpermision h6{
+  color: $editColor;
+}
+.dustbin-rolpermision h6{
+  color: $failedColor;
+}
+.all-rolpermision h6{
+  color: $backgroundColor;
+}
+table.table.table-striped tbody tr td {
+  padding: 15px 15px;
+}
+table.table.table-striped tbody tr:nth-child(odd){
+  background-color: $bodyColor;
+}
+.form-switch .form-check-input {
+  width: 2.4em;
+}
+.main-content-height{
+  min-height: calc(100vh - 70px);
+}
+.form-check-input {
+@include checkbox;
+margin-top: 0em;
+}
+// .form-check-input:checked{
+//     background-color: $primeryColor;
+//     border-color: $primeryColor;
+//     @include checkbox;
+//   }
+.form-check-input:focus{
+  box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 0%);
+}
+
+/* width */
+::-webkit-scrollbar {
+    width: 8px;
+  }
+  .form-select:focus {
+    border-color: #ced4da;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgb(255 255 255 / 25%);
+}
+.form-control:focus {
+  border-color: #ced4da;
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgb(255 255 255 / 25%);
+}
+  /* Track */
+  ::-webkit-scrollbar-track {
+    background: $bodyColor; 
+  }
+   
+  /* Handle */
+  ::-webkit-scrollbar-thumb {
+    background: $primeryColor; 
+  }
+  
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background: $sidebarHover; 
+  }
+  button.btn {
+    min-width: 130px;
+}
+[type="search"] {
+  outline: none;
+}
+select:focus-visible {
+  outline: none;
+}
+.bootstrap-select>.dropdown-toggle.bs-placeholder, .bootstrap-select>.dropdown-toggle.bs-placeholder:active, .bootstrap-select>.dropdown-toggle.bs-placeholder:focus, .bootstrap-select>.dropdown-toggle.bs-placeholder:hover {
+  color: #44484b;
+  background: white;
+  border: 1px solid #ced4da;
+}
+.bootstrap-select .dropdown-toggle:focus, .bootstrap-select>select.mobile-device:focus+.dropdown-toggle {
+  outline: thin dotted #333!important;
+  outline: 0px auto -webkit-focus-ring-color!important;
+  outline-offset: none!important;
+}
+.btn-check:active + .btn-light:focus, .btn-check:checked + .btn-light:focus, .btn-light.active:focus, .btn-light:active:focus, .show > .btn-light.dropdown-toggle:focus {
+  box-shadow: 0 0 0 0.25rem rgb(211 212 213 / 0%);
+}
+
+#first-tr{
+  display: none;
+}
+.userdb:focus, .userdb:hover {
+  color: #ffffff;
+  background-color: #0980b2;
+}
+ul.dropdown-menu.dropdown-menu-end.show li a {
+  padding: 6px 10px;
+  border-bottom: 1px solid #d5d5d5;
+}
+.btn-group.user-dropdown {
+  min-height: 55px;
+}
+.dbdeco {
+  min-width: 11rem;
+  padding: 0rem 0;
+}
+/*Login Screen Start*/
+.profile-details{
+  text-align: center;
+}
+
+.avatar-upload {
+  position: relative;
+  max-width: 205px;
+  margin: 20px auto;
+}
+.avatar-upload .avatar-edit {
+  position: absolute;
+  right: 12px;
+  z-index: 1;
+  top: 10px;
+}
+.avatar-upload .avatar-edit input {
+  display: none;
+}
+.avatar-upload .avatar-edit input + label {
+ @include avatarLabel() 
+}
+.avatar-upload .avatar-edit input + label:hover {
+  background: $whiteShade;
+  border-color: #d6d6d6;
+}
+.avatar-upload .avatar-edit input + label:after {
+ @include avatarEdit();
+}
+.avatar-upload .avatar-preview {
+@include avatarPreview();
+}
+.avatar-upload .avatar-preview > div {
+  width: 100%;
+  height: 100%;
+  border-radius: 100%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+p.role span {
+  background: #a9daef;
+  padding: 5px 20px;
+  border-radius: 5px;
+  color: #0980b2;
+  font-weight: 500;
+}
+
+
+.login-bg-image {
+@include loginFormBg();
+}
+.mb-3.customize-input input {
+  height: 50px;
+}
+.right-bx.p-5 {
+  padding: 55px;
+}
+section.login-bg {
+  @include loginMiddlebox();
+}
+.login-heading h4 {
+  font-size: 30px;
+  color: $primeryColor;
+  font-weight: 700;
+}
+.login-md-section.row {
+  height: 100vh;
+}
+.right-form-set {
+@include rightFormSet();
+}
+.left-side-content p {
+  line-height: 30px;
+}
+button.btn.btn-primary.float-end.w-100{
+  height: 50px;
+}
+.overlay {
+  @include globalOverlay();
+}
+.left-side-content{
+@include loginLeftContent();
+}
+.col-12.col-md-12.col-lg-9.logo-loginsection img {
+  width: 40%;
+  margin-bottom: 20px;
+}
+.left-side-content h3 {
+  font-size: 45px;
+  margin-bottom: 16px;
+}
+/*Login Screen End*/
+
+/*DataTable start*/
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: $whiteShade!important;
+    border: 1px solid rgb(0 0 0 / 0%);
+    background: #0980b2;
+    border-radius: 30px;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button{
+    margin-left: 5px;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled, .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover, .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:active{
+   cursor: default;
+    border: 1px solid transparent;
+    background:$lightBlue;
+    box-shadow: none;
+    border-radius: 30px;
+}
+a#floormanagement_previous svg{
+  color: $primeryColor;
+}
+a#floormanagement_next svg {
+  color: $primeryColor;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color: $primeryColor;
+    border: 1px solid #1110;
+    background: $lightBlue;
+    border-radius: 30px;
+}
+table.table.table-bordered {
+  table-layout: fixed;
+}
+table.table.table-bordered.role_table tbody tr td {
+  padding: 15px 10px;
+}
+/*DataTable End*/
+
+/*Modal Popup start*/
+button.btn.btn-primary {
+    @include globalbtn()
+}
+.delete-img {
+    display: flex;
+    justify-content: center;
+}
+
+.sidebar-show-hide div ul li:hover {
+    background: $sidebarHover;
+}
+/*Modal Popup start*/
+
+/*Header section start*/
+.logo-section {
+    width: 300px;
+    height: 70px;
+    line-height: 70px;
+}
+
+// .logo-section a.navbar-brand{
+// color:$primeryColor;
+// font-size: $main-heading;
+// font-weight: 500;
+// }
+h4.restro_name {
+  margin-bottom: 0px;
+  margin-left: 20px;
+  color: $primeryColor;
+}
+a.navbar-brand img {
+  width: 110px;
+  height: 60px;
+  margin-top: -5px;
+}
+
+nav.navbar.navbar-expand-lg.navbar-light {
+    height: 70px;
+    background-color: $whiteShade;
+    position: fixed;
+    width: 100%;
+    z-index: 999;
+}
+.sidebar-toggle img{
+    width: 100%;
+    cursor: pointer;
+}
+.search-section{
+    width: 400px;
+    height: 40px;
+    position: relative;
+    margin-left: 40px;
+}
+input#search {
+    @include GlobalSearch();
+}
+.d-flex.search-section img {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    padding: 0px 10px;
+}
+.form-control:focus {
+    border-color: #ced4da;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 0%);
+}
+.sidebar-toggle.ms-3 {
+    width: 25px;
+}
+/*Header section end*/
+
+/*Sidebar Section start*/
+.sidebar{
+    @include SidebarSet()
+  }
+  .sidebar.close{
+    width: 60px;
+  }
+  .width-adjust{
+    width: 300px;
+  }
+  ul.sub-menu li {
+    padding: 5px 6px;
+}
+
+.sidebar .nav-links li:nth-child(1) {
+  height: auto;
+  padding: 0px;
+}
+.sidebar.close .nav-links li:nth-child(1) {
+  height: auto;
+  //padding: 0px 5px;
+  margin: auto;
+}
+
+  .sidebar .logo-details{
+    height: 60px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+  }
+  .sidebar .logo-details i{
+    font-size: 30px;
+    color: $secondryColor;
+    height: 50px;
+    min-width: 78px;
+    text-align: center;
+    line-height: 50px;
+  }
+  .sidebar .logo-details .logo_name{
+    font-size: 22px;
+    color: $whiteShade;
+    font-weight: 600;
+    transition: 0.3s ease;
+    transition-delay: 0.1s;
+  }
+  .sidebar.close .logo-details .logo_name{
+    transition-delay: 0s;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .sidebar .nav-links{
+    height: 100%;
+    padding: 30px 0 150px 0;
+    overflow: auto;
+  }
+  .sidebar.close .nav-links{
+    overflow: visible;
+  }
+  .sidebar .nav-links::-webkit-scrollbar{
+    display: none;
+  }
+  .sidebar .nav-links li{
+    position: relative;
+    list-style: none;
+    transition: all 0.2s ease;
+    text-overflow: ellipsis;
+    width: 100%;
+    text-wrap: nowrap;
+  }
+  
+  .sidebar .nav-links li.active:before,
+  .sidebar .nav-links li:hover:before{
+    opacity: 1;
+  }
+  .sidebar .nav-links li .iocn-link{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sidebar.close .nav-links li .iocn-link{
+    display: block
+  }
+  .sidebar .nav-links li i{
+    height: 50px;
+    min-width: 45px;
+    text-align: center;
+    line-height: 50px;
+    color: $whiteShade;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  } 
+  .sidebar .nav-links li.active i,
+  .sidebar .nav-links li:hover i{
+    color: $whiteShade;
+  }
+  .sidebar .nav-links li.showMenu i.arrow{
+    transform: rotate(-180deg);
+  }
+  .sidebar.close .nav-links i.arrow{
+    display: none;
+  }
+  .sidebar .nav-links li a{
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+  }
+  .sidebar .nav-links li a .link_name{
+    font-size: 16px;
+    font-weight: 400;
+    color: $whiteShade;
+    transition: all 0.4s ease;
+  }
+  .sidebar .nav-links li.active a .link_name,
+  .sidebar .nav-links li:hover a .link_name{  
+    color: $whiteShade;
+  }
+  .sidebar .nav-links li:hover,
+  .sidebar .nav-links li:active {
+      background: $sidebarHover;
+  }
+  .sidebar.close .nav-links li a .link_name{
+    opacity: 0;
+    pointer-events: none;
+  }
+  .sidebar .nav-links li .sub-menu{
+    padding: 6px 6px 14px 40px;
+    margin-top: 0px;
+    background: $sidebarHover;
+    display: none;
+  }
+  .sidebar .nav-links li.showMenu .sub-menu{
+    display: block;
+  }
+  .sidebar .nav-links li .sub-menu a{
+    color: $whiteShade;
+    font-size: 15px;
+    padding: 5px 10px;
+    white-space: nowrap;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+  }
+  .sidebar .nav-links li .sub-menu a:hover{
+    opacity: 1;
+  }
+  .sidebar.close .nav-links li .sub-menu{
+    position: absolute;
+    left: 100%;
+    top: -10px;
+    margin-top: 0;
+    padding: 10px 20px;
+    border-radius: 0 6px 6px 0;
+    opacity: 0;
+    display: block;
+    pointer-events: none;
+    transition: 0s;
+  }
+  .sidebar.close .nav-links li:hover .sub-menu{
+    top: 0;
+    opacity: 1;
+    pointer-events: auto;
+    transition: all 0.4s ease;
+  }
+  .sidebar .nav-links li .sub-menu .link_name{
+    display: none;
+  }
+  .sidebar.close .nav-links li .sub-menu .link_name{
+    font-size: 18px;
+    opacity: 1;
+    display: block;
+  }
+  .sidebar .nav-links li .sub-menu.blank{
+    opacity: 1;
+    pointer-events: auto;
+    padding: 3px 20px 6px 16px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .sidebar .nav-links li:hover .sub-menu.blank{
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  
+  .home-section{
+    position: relative;
+    background: $bodyColor;
+    height: 100vh;
+    left: 0px;
+    transition: all 0.5s ease;
+  }
+  
+  .home-section .home-content{
+    height: 60px;
+    display: flex;
+    align-items: center;
+  }
+  .home-section .home-content .bx-menu,
+  .home-section .home-content .text{
+    color: $secondryColor;
+    font-size: 35px;
+  }
+  .home-section .home-content .bx-menu{
+    margin: 0 15px;
+    cursor: pointer;
+  }
+  .home-section .home-content .text{
+    font-size: 26px;
+    font-weight: 600;
+  }
+  ul.sub-sub-menu {
+      display: none;
+  }
+  .sidebar.close .nav-links li .sub-menu ul.sub-sub-menu {
+      position: absolute;
+      z-index: 9999;
+      left: 100%;
+      background: $sidebarHover;
+      padding: 5px 35px;
+  }
+  li.active{
+    background-color: $sidebarHover;
+    display: block;
+  }
+  @media (max-width: 420px) {
+    .sidebar.close .nav-links li .sub-menu{
+      display: none;
+    }
+  }
+/*Sidebar section end*/
+
+/*Main Wrapper start*/
+.wrapper {
+    min-height: calc(100vh - 70px);
+    margin-left: 300px;
+    transition: 1s;
+    padding-top: 70px;
+}
+.wrapper-left{
+    margin-left: 60px;
+  }
+.main-heading h4 {
+    padding: 15px 0px;
+    color: $primeryColor;
+    font-weight: 500;
+}
+table.dataTable tbody th, table.dataTable tbody td {
+    padding: 15px 10px;
+}
+.margin-maincontent-zero{
+    margin-left: 78px;    
+}
+.main-content.p-3 {
+    border-radius: 5px;
+    background: $whiteShade;
+}
+.reserved {
+    background: $statusReserved;
+    @include status()
+  
+}
+.reserved span{
+    color:$sucessColor;
+}
+
+.pending {
+    background: $statusPending;
+    @include status()
+  
+}
+.pending span{
+    color:$failedColor;
+}
+.main-heading a {
+    @include buttonStyle();
+}
+.main-heading{
+    @include mainheading-buttonSet()
+}
+/*Main Wrapper End*/
+
+/*Floor management start*/
+.floor_layout_setup {
+@include setupLayout;
+}
+.floor_layout_setup div h5 {
+  font-size: 20px;
+  color: $mainContent;
+}
+.tab_one {
+@include tabLayout;
+}
+.tab_two{
+  @include tabLayout;
+  border-top: none;
+  border-radius: 0%;
+}
+.tab_three{
+  @include tabLayout;
+  border-top: none;
+  border-radius: 0%;
+}
+.tab_four{
+  @include tabLayout;
+  border-top: none;
+  border-radius: 0%;
+}
+.tab_five {
+  @include tabLayout;
+  border-top: none;
+  border-radius: 0%;
+}
+.tab_six {
+  @include tabLayout;
+  border-top: none;
+  border-radius: 0%;
+}
+.tab_seven {
+  @include tabLayout;
+  border-top: none;
+  border-radius: 0%;
+}
+.tab_eight {
+  @include tabLayout;
+  border-top: none;
+  border-radius: 0px 0px 5px 5px;
+}
+canvas#myCanvas {
+  height: 100vh;
+  background-color: $whiteShade;
+  border:1px solid #d3d3d3;
+  width: 100%;
+}
+.canvas-container {
+  width: 100%!important;
+  height: 100vh!important;
+  overflow: hidden;
+}
+.common-btn{
+ @include customCommonBtn()
+}
+.common-btn:focus {
+  background: #e3e2e2;
+}
+/*Floor management end*/
+
+.rating_star i {
+  color: #cfa319;
+  font-size: 17px;
+}
+input#add_background_color {
+  height: 40px;
+  padding: 2px;
+}
+canvas#myCanvastwo {
+    position: absolute;
+    left: 0px;
+}
+/*Item Management start*/
+.table_scrol{
+  width: 100%;
+  overflow-x:auto;
+}
+.table_scrol table.table.table-bordered.table-decor {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  border: 1px solid #ddd;
+  white-space: pre;
+  table-layout: inherit;
+}
+/*Item Management end*/
+
+
+
+
+
+
+
+
