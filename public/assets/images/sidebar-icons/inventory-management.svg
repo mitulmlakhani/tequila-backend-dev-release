@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="21.286" height="21.206" viewBox="0 0 21.286 21.206">
+  <g id="inventory-management" transform="translate(-3 -3)">
+    <path id="Path_7" data-name="Path 7" d="M28.5,36h3.041v3.262H28.5Z" transform="translate(-12.576 -15.057)" fill="#fff"/>
+    <path id="Path_8" data-name="Path 8" d="M39,36h3.041v3.262H39Z" transform="translate(-17.754 -15.057)" fill="#fff"/>
+    <path id="Path_9" data-name="Path 9" d="M28.5,25.5h3.041v3.262H28.5Z" transform="translate(-12.576 -10.266)" fill="#fff"/>
+    <path id="Path_10" data-name="Path 10" d="M39,25.5h3.041v3.262H39Z" transform="translate(-17.754 -10.266)" fill="#fff"/>
+    <path id="Path_11" data-name="Path 11" d="M14.4,20.943H4.52V9.525H22.766V13.6h1.52V9.525a1.58,1.58,0,0,0-1.52-1.631H18.2V4.631A1.58,1.58,0,0,0,16.684,3H10.6a1.58,1.58,0,0,0-1.52,1.631V7.894H4.52A1.58,1.58,0,0,0,3,9.525V20.943a1.58,1.58,0,0,0,1.52,1.631H14.4ZM10.6,4.631h6.082V7.894H10.6Z" fill="#fff"/>
+  </g>
+</svg>

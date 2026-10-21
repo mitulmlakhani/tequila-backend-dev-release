@@ -1,0 +1,27 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up()
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('email')->nullable()->change();
+            $table->string('password')->nullable()->change();
+            $table->string('passcode', 30)->nullable()->change();
+            $table->index('email'); // Create a regular index instead of UNIQUE
+        });
+    }
+
+    public function down()
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('email')->nullable(false)->change();
+            $table->string('password')->nullable(false)->change();
+            $table->string('passcode', 6)->nullable()->change();
+            $table->unique('email'); // Restore unique constraint if needed
+        });
+    }
+};

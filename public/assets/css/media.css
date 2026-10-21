@@ -1,0 +1,87 @@
+
+
+@media (max-width: 600px) {
+    .wrapper {
+        min-height: calc(100vh - 70px);
+        margin-left: 0px;
+        transition: 1s;
+        padding-top: 70px;
+    }
+    .floor_layout_setup {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        flex-direction: column;
+    } 
+    .sidebar.close {
+        left: -60px;
+    }
+    h4.restro_name {
+      display: none;
+    }
+    .main-heading {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+    button.btn.btn-secondary.dropdown-toggle.bg-white.border-0 span {
+        display: none;
+    }
+    .btn-group.user-dropdown button.btn {
+        min-width: 80px;
+    }
+    .logo-section {
+        width: 200px;
+        height: 50px;
+        line-height: 50px;
+    }
+    .right-form-set {
+        padding: 20px;
+      }
+      .left-side-content {
+        padding: 20px;
+    }
+  }
+  @media (min-width: 768px){
+    .floor_layout_setup {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        flex-direction: column;
+    }
+    .common-btn {
+        width: 100%;
+    }
+  
+    .right-form-set {
+        padding: 15px
+    }
+    .left-side-content {
+        padding: 15px;
+    }
+  }
+  @media (min-width: 992px){
+    .left-side-content {
+        padding: 30px;
+    }
+    .floor_layout_setup {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        flex-direction: column;
+    }
+  }
+  @media screen and (min-width: 1367px){
+    .floor_layout_setup {
+        width: 70%;
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        flex-direction: column;
+    }
+  }
+  

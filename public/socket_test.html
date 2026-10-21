@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Laravel Echo & Redis Test</title>
+
+  <!-- Load Socket.IO v2.4.0 (compatible with laravel-echo-server@1.6.2) -->
+  <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2.4.0/dist/socket.io.js"></script>
+
+  <!-- Load Laravel Echo -->
+  <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.11.3/dist/echo.iife.js"></script>
+
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    pre { background: #f0f0f0; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🔄 Listening for <code>order.updated</code> on <code>teq_orders</code></h1>
+  <pre id="log">Waiting for event...</pre>
+
+  <script>
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      el.textContent += "\n" + msg;
+      console.log(msg);
+    };
+
+    // Initialize Laravel Echo with secure wss connection
+    const echo = new Echo({
+      broadcaster: 'socket.io',
+      host: 'wss://staging.tequilapos.net', // <== SSL WebSocket endpoint
+      client: io,
+      transports: ['websocket'],
+      encrypted: true,
+    });
+
+    // Listen for echo connection events
+    echo.connector.socket.on('connect', () => {
+      log('🟢 Socket.IO connected');
+    });
+
+    echo.connector.socket.on('connect_error', (err) => {
+      log('❌ Connection error: ' + err.message);
+    });
+
+    echo.connector.socket.on('disconnect', () => {
+      log('🔌 Disconnected from server');
+    });
+
+    // Subscribe to channel and listen for event
+    // echo.private('order_updates_.55')
+    echo.channel('order_updates_.55')
+      .subscribed(() => {
+        log('🟢 Subscribed to private-order_updates_.55');
+      })
+      .listen('.item.updated', (data) => {
+        log('📦 Received item.updated event!');
+        log(JSON.stringify(data, null, 2));
+      })
+      .listen('.order.updated', (data) => {
+        log('📦 Received order.updated event!');
+        log(JSON.stringify(data, null, 2));
+      });
+  </script>
+</body>
+</html>

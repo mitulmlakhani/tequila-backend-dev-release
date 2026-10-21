@@ -5,7 +5,12 @@
 /public/hot
 /public/storage
 /public/w4_documents
-# /public
+/public/gallery
+/public/favicons
+/public/logos
+/public/banner_img
+/public/chef_image
+/public/floor_item_icons
 /storage/*.key
 /storage
 /vendor
@@ -25,7 +30,4 @@ yarn-error.log
 /.svn
 app/Http/.DS_Store
 .DS_Store
-/db_data
 laravel-echo-server.lock
-laravel-echo-server.docker.lock
-updator.log
